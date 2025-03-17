@@ -11,7 +11,7 @@ def create_file(name_file, number_of_clients):
     
     
 def server_content():
-    return """\
+    return f"""\
     server:
         container_name: server
         image: server:latest
@@ -21,6 +21,8 @@ def server_content():
         - LOGGING_LEVEL=DEBUG
         networks:
         - testing_net
+        volumes:
+        - ./server/config.ini:/config.ini  
     """
 
 def clients_content(number_of_clients):
@@ -38,6 +40,8 @@ def clients_content(number_of_clients):
         - testing_net
         depends_on:
         - server
+        volumes:
+        - ./client/config.yaml:/config.yaml 
     """
         content += "\n"
     return content
@@ -51,7 +55,7 @@ networks:
             config:
                 - subnet: 172.25.125.0/24
     """   
-    
+
     
 def main():
     if len(sys.argv) != 3:
