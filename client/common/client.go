@@ -21,16 +21,19 @@ type ClientConfig struct {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config ClientConfig
-	conn   net.Conn
+	config  ClientConfig
+	conn    net.Conn
+	running bool
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
-		config: config,
+		config:  config,
+		running: true,
 	}
+
 	return client
 }
 
@@ -54,7 +57,7 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+	for msgID := 1; msgID <= c.config.LoopAmount && c.running; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
@@ -62,6 +65,10 @@ func (c *Client) StartClientLoop() {
 		fmt.Fprintf(
 			c.conn,
 			"[CLIENT %v] Message N°%v\n",
+			c.config.ID,
+			msgID,
+		)
+		log.Infof("action: send_message | result: success | client_id: %v | msg_id: %v",
 			c.config.ID,
 			msgID,
 		)
@@ -86,4 +93,18 @@ func (c *Client) StartClientLoop() {
 
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+func (c *Client) StopClient() {
+	c.running = false
+	if c.conn != nil {
+		err := c.conn.Close()
+		if err != nil {
+			log.Criticalf("action: connection closed | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err)
+		} else {
+			log.Infof("action: graceful_shutdown client connection | result: success | client_id: %v", c.config.ID)
+		}
+	}
+
+	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
 }
