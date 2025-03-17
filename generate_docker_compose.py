@@ -44,12 +44,12 @@ def clients_content(number_of_clients):
 
 def network_content():
     return """\
-    networks:
-        testing_net:
-            ipam:
-                driver: default
-                config:
-                    - subnet: 172.25.125.0/24
+networks:
+    testing_net:
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.25.125.0/24
     """   
     
     
