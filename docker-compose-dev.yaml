@@ -9,6 +9,8 @@ services:
         - LOGGING_LEVEL=DEBUG
         networks:
         - testing_net
+        volumes:
+        - ./server/config.ini:/config.ini  
     
     client1:
         container_name: client1
@@ -21,6 +23,8 @@ services:
         - testing_net
         depends_on:
         - server
+        volumes:
+        - ./client/config.yaml:/config.yaml 
     
 networks:
     testing_net:
@@ -28,5 +32,4 @@ networks:
             driver: default
             config:
                 - subnet: 172.25.125.0/24
-                
     
