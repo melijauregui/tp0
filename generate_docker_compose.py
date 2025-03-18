@@ -40,7 +40,7 @@ def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero
         - server
         volumes:
         - ./client/config.yaml:/config.yaml 
-        - ./.data/agency-{i}.csv:/.data/gency-{i}.csv
+        - ./.data/agency-{i}.csv:/.data/agency-{i}.csv
     """
         content += "\n"
     return content

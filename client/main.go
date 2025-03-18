@@ -118,7 +118,8 @@ func main() {
 	client := common.NewClient(clientConfig)
 	//lanza un proceso en segundo plano que espera las signals y las maneja sin bloquear la ejecución del client.
 	go HandleSignals(client)
-	client.StartClientLoop()
+	client.SendBatchMessage()
+	os.Exit(0)
 }
 
 func HandleSignals(c *common.Client) {

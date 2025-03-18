@@ -60,14 +60,18 @@ class Server:
         try:
             # TODO: Modify the receive to avoid short-reads
             msg_str = read_message(self._client_socket)
-            msg = msg_str.split(",")
-            store_bets([Bet(msg[5],msg[2], msg[3], msg[0], msg[4], msg[1])])
+            bet_list = []
+            bets_split = msg_str.split(";")
+            for bet in bets_split:
+                bet_info = bet.split(",")
+                bet_list.append(Bet(bet_info[5],bet_info[2], bet_info[3], bet_info[0], bet_info[4], bet_info[1]))
+            store_bets(bet_list)
             
-            bets= load_bets()
+            bets = load_bets()
             for bet in bets:
-                logging.info(f'action: load_bet | result: success | dni: {bet.document} | numero: {bet.number} | agencia: {bet.agency} | nombre: {bet.first_name} | apellido: {bet.last_name} | fecha_nacimiento: {bet.birthdate}')
-           
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {msg[0]} | numero: {msg[1]}')
+                logging.info(f'action: apuesta_guardada | bet: {bet.first_name} {bet.last_name}')
+            
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bet_list)}')
             
             msg_server = "Apuesta almacenada"
             msg_server = f"{len(msg_server)}:{msg_server}"
