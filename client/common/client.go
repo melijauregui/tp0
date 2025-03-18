@@ -70,13 +70,6 @@ func (c *Client) StartClientLoop() {
 		msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
 		msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
 		receivedMessage, err := SendMessage(c.conn, msgSend)
-		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %d.",
-			c.config.DNI,
-			c.config.Numero,
-		)
-
-		err_closing := c.conn.Close()
-
 		if err != nil {
 			log.Errorf("action: send_message | result: fail | dni: %v | numero: %v | error: %v",
 				c.config.DNI,
@@ -86,10 +79,13 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %d.",
+			c.config.DNI,
+			c.config.Numero,
+		)
 		log.Infof("action: send_message | result: success | received_message: %v", receivedMessage)
 
-		c.conn.Close()
-
+		err_closing := c.conn.Close()
 		if err_closing != nil {
 			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
 		}
