@@ -74,7 +74,7 @@ func (c *Client) StartClientLoop() {
 			msgID,
 		)
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
+		err_closing := c.conn.Close()
 
 		if err != nil {
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
@@ -83,6 +83,12 @@ func (c *Client) StartClientLoop() {
 			)
 			return
 		}
+
+		if err_closing != nil {
+			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+		}
+
+		c.conn = nil
 
 		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
 			c.config.ID,
@@ -101,10 +107,11 @@ func (c *Client) StopClient() {
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
-			log.Criticalf("action: connection closed | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err)
+			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
 		} else {
 			log.Infof("action: graceful_shutdown client connection | result: success | client_id: %v", c.config.ID)
 		}
+		c.conn = nil
 	}
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
