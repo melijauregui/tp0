@@ -75,6 +75,8 @@ func (c *Client) StartClientLoop() {
 			c.config.Numero,
 		)
 
+		err_closing := c.conn.Close()
+
 		if err != nil {
 			log.Errorf("action: send_message | result: fail | dni: %v | numero: %v | error: %v",
 				c.config.DNI,
@@ -84,12 +86,17 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		log.Infof("action: send_message | received_message: %v", receivedMessage)
+		log.Infof("action: send_message | result: success | received_message: %v", receivedMessage)
 
 		c.conn.Close()
 
-		time.Sleep(c.config.LoopPeriod)
+		if err_closing != nil {
+			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+		}
 
+		c.conn = nil
+
+		time.Sleep(c.config.LoopPeriod)
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
@@ -99,10 +106,11 @@ func (c *Client) StopClient() {
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
-			log.Criticalf("action: connection closed | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err)
+			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
 		} else {
 			log.Infof("action: graceful_shutdown client connection | result: success | client_id: %v", c.config.ID)
 		}
+		c.conn = nil
 	}
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
