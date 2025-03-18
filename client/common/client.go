@@ -66,7 +66,7 @@ func (c *Client) StartClientLoop() {
 
 		// Send the message to the server
 		//msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
-		msg := ""
+		msg := "30904465,2201,Santiago Lionel,Lorca,1999-03-17,1"
 		msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
 		receivedMessage, err := SendMessage(c.conn, msgSend)
 		if err != nil {
@@ -117,7 +117,6 @@ func (c *Client) SendBatchMessage() {
 		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err)
 	}
 
-	defer readFile.Close()
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
 
@@ -145,6 +144,9 @@ func (c *Client) SendBatchMessage() {
 	c.SendBatchMessage2(bet, msg[0:len(msg)-1])
 
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+
+	readFile.Close()
+	log.Infof("CERRANDO READFILE")
 
 }
 
