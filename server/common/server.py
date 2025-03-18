@@ -4,7 +4,7 @@ import signal
 import sys
 
 from common.communication_protocol import read_message, send_message
-from common.utils import Bet, store_bets
+from common.utils import Bet, load_bets, store_bets
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -62,6 +62,10 @@ class Server:
             msg_str = read_message(self._client_socket)
             msg = msg_str.split(",")
             store_bets([Bet(msg[5],msg[2], msg[3], msg[0], msg[4], msg[1])])
+            
+            bets= load_bets()
+            for bet in bets:
+                logging.info(f'action: load_bet | result: success | dni: {bet.document} | numero: {bet.number} | agencia: {bet.agency} | nombre: {bet.first_name} | apellido: {bet.last_name} | fecha_nacimiento: {bet.birthdate}')
            
             logging.info(f'action: apuesta_almacenada | result: success | dni: {msg[0]} | numero: {msg[1]}')
             
