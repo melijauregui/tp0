@@ -64,7 +64,7 @@ def main():
         sys.exit(1)
         
     number_of_clients = int(sys.argv[2])
-    if not isinstance(number_of_clients, int) or number_of_clients < 1:
+    if not isinstance(number_of_clients, int) or number_of_clients < 0:
         print("The number of clients is not valid")
         sys.exit(1)
         
