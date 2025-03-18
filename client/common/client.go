@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/op/go-logging"
@@ -107,4 +108,6 @@ func (c *Client) StopClient() {
 	}
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
+	os.Exit(0)
+
 }
