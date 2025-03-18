@@ -67,10 +67,6 @@ class Server:
                 bet_list.append(Bet(bet_info[5],bet_info[2], bet_info[3], bet_info[0], bet_info[4], bet_info[1]))
             store_bets(bet_list)
             
-            bets = load_bets()
-            for bet in bets:
-                logging.info(f'action: apuesta_guardada | bet: {bet.first_name} {bet.last_name}')
-            
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bet_list)}')
             
             msg_server = "Apuesta almacenada"
