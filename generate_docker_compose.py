@@ -21,7 +21,7 @@ def server_content():
         networks:
         - testing_net
         volumes:
-        - ./server/config.ini:/config.ini  
+        - ./server/config.ini:/config.ini
     """
 
 def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero):
@@ -34,17 +34,13 @@ def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero
         entrypoint: /client
         environment:
         - CLI_ID={i}
-        - CLI_NOMBRE={nombre}
-        - CLI_APELLIDO={apellido}
-        - CLI_DNI={dni}
-        - CLI_NACIMIENTO={nacimiento}
-        - CLI_NUMERO={numero}
         networks:
         - testing_net
         depends_on:
         - server
         volumes:
         - ./client/config.yaml:/config.yaml 
+        - ./.data/agency-{i}.csv:/.data/gency-{i}.csv
     """
         content += "\n"
     return content
@@ -58,6 +54,7 @@ networks:
             config:
                 - subnet: 172.25.125.0/24
     """   
+
 
     
 def main():
