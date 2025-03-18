@@ -1,7 +1,6 @@
 package common
 
 import (
-	"bufio"
 	"fmt"
 	"net"
 	"time"
@@ -17,6 +16,11 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	Nombre        string
+	Apellido      string
+	DNI           string
+	Nacimiento    string
+	Numero        int
 }
 
 // Client Entity that encapsulates how
@@ -61,34 +65,28 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
+		// Send the message to the server
+		msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
+		msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
+		receivedMessage, err := SendMessage(c.conn, msgSend)
+		log.Infof("action: apuesta_enviada | result: success | dni: %d | numero: %d.",
+			c.config.DNI,
+			c.config.Numero,
 		)
-		log.Infof("action: send_message | result: success | client_id: %v | msg_id: %v",
-			c.config.ID,
-			msgID,
-		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
 
 		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
+			log.Errorf("action: send_message | result: fail | dni: %v | numero: %v | error: %v",
+				c.config.DNI,
+				c.config.Numero,
 				err,
 			)
 			return
 		}
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
+		log.Infof("action: send_message | received_message: %v", receivedMessage)
 
-		// Wait a time between sending one message and the next one
+		c.conn.Close()
+
 		time.Sleep(c.config.LoopPeriod)
 
 	}

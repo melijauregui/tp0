@@ -5,7 +5,7 @@ def create_file(name_file, number_of_clients):
         file.write("name: tp0\n")
         file.write("services:\n")
         file.write(server_content() + "\n")
-        file.write(clients_content(number_of_clients))
+        file.write(clients_content(number_of_clients, "Juan", "Perez", "12345678", "1990-01-01", "123456789"))
         file.write(network_content())
     
     
@@ -25,7 +25,7 @@ def server_content():
         - ./server/config.ini:/config.ini  
     """
 
-def clients_content(number_of_clients):
+def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero):
     content = ""
     for i in range(1, number_of_clients+1):
         content += f"""\
@@ -36,6 +36,11 @@ def clients_content(number_of_clients):
         environment:
         - CLI_ID={i}
         - CLI_LOG_LEVEL=DEBUG
+        - CLI_NOMBRE={nombre}
+        - CLI_APELLIDO={apellido}
+        - CLI_DNI={dni}
+        - CLI_NACIMIENTO={nacimiento}
+        - CLI_NUMERO={numero}
         networks:
         - testing_net
         depends_on:

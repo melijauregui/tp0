@@ -1,5 +1,6 @@
 import csv
 import datetime
+import logging
 import time
 
 
@@ -33,11 +34,14 @@ Persist the information of each bet in the STORAGE_FILEPATH file.
 Not thread-safe/process-safe.
 """
 def store_bets(bets: list[Bet]) -> None:
+    logging.info(f'STORE BEST | agency {bets[0].agency} | first_name {bets[0].first_name} | last_name {bets[0].last_name} | document {bets[0].document} | birthdate {bets[0].birthdate} | number {bets[0].number}')
     with open(STORAGE_FILEPATH, 'a+') as file:
         writer = csv.writer(file, quoting=csv.QUOTE_MINIMAL)
         for bet in bets:
             writer.writerow([bet.agency, bet.first_name, bet.last_name,
                              bet.document, bet.birthdate, bet.number])
+            
+        file.flush()
 
 """
 Loads the information all the bets in the STORAGE_FILEPATH file.

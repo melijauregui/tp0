@@ -35,6 +35,11 @@ func InitConfig() (*viper.Viper, error) {
 
 	// Add env variables supported
 	v.BindEnv("id")
+	v.BindEnv("nombre")
+	v.BindEnv("apellido")
+	v.BindEnv("dni")
+	v.BindEnv("nacimiento")
+	v.BindEnv("numero")
 	v.BindEnv("server", "address")
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
@@ -83,12 +88,17 @@ func InitLogger(logLevel string) error {
 // PrintConfig Print all the configuration parameters of the program.
 // For debugging purposes only
 func PrintConfig(v *viper.Viper) {
-	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s",
+	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s | nombre %s | apellido %s | dni %s | nacimiento %s | numero %v",
 		v.GetString("id"),
 		v.GetString("server.address"),
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
+		v.GetString("nombre"),
+		v.GetString("apellido"),
+		v.GetInt("dni"),
+		v.GetString("nacimiento"),
+		v.GetInt("numero"),
 	)
 }
 
@@ -110,6 +120,11 @@ func main() {
 		ID:            v.GetString("id"),
 		LoopAmount:    v.GetInt("loop.amount"),
 		LoopPeriod:    v.GetDuration("loop.period"),
+		Nombre:        v.GetString("nombre"),
+		Apellido:      v.GetString("apellido"),
+		DNI:           v.GetString("dni"),
+		Nacimiento:    v.GetString("nacimiento"),
+		Numero:        v.GetInt("numero"),
 	}
 
 	client := common.NewClient(clientConfig)
@@ -126,7 +141,7 @@ func HandleSignals(c *common.Client) {
 	//escuche la señal SIGTERM del sistema operativo.
 	//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
 	<-sigChannel
-	//bloquea la ejecución hasta que el canal reciba la señal sigterm.
+	//Bloquea la ejecución hasta que el canal reciba una señal.
 
 	c.StopClient()
 	os.Exit(0)
