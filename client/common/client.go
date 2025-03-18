@@ -70,7 +70,7 @@ func (c *Client) StartClientLoop() {
 		msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
 		msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
 		receivedMessage, err := SendMessage(c.conn, msgSend)
-		log.Infof("action: apuesta_enviada | result: success | dni: %d | numero: %d.",
+		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %d.",
 			c.config.DNI,
 			c.config.Numero,
 		)
