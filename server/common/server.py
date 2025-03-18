@@ -67,7 +67,7 @@ class Server:
             
             msg_server = "Apuesta almacenada"
             msg_server = f"{len(msg_server)}:{msg_server}"
-            logging.info(f'action: sending server message | msg_server: {msg_server} ')
+            logging.info(f'action: sending server message | result: success | msg_server: {msg_server} ')
             send_message(self._client_socket, msg_server)
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")

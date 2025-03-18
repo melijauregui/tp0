@@ -6,7 +6,6 @@ services:
         entrypoint: python3 /main.py
         environment:
         - PYTHONUNBUFFERED=1
-        - LOGGING_LEVEL=DEBUG
         networks:
         - testing_net
         volumes:
@@ -18,12 +17,11 @@ services:
         entrypoint: /client
         environment:
         - CLI_ID=1
-        - CLI_LOG_LEVEL=DEBUG
         - CLI_NOMBRE=Juan
         - CLI_APELLIDO=Perez
         - CLI_DNI=12345678
         - CLI_NACIMIENTO=1990-01-01
-        - CLI_NUMERO=666
+        - CLI_NUMERO=123456789
         networks:
         - testing_net
         depends_on:
