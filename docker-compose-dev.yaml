@@ -17,17 +17,13 @@ services:
         entrypoint: /client
         environment:
         - CLI_ID=1
-        - CLI_NOMBRE=Juan
-        - CLI_APELLIDO=Perez
-        - CLI_DNI=12345678
-        - CLI_NACIMIENTO=1990-01-01
-        - CLI_NUMERO=123456789
         networks:
         - testing_net
         depends_on:
         - server
         volumes:
         - ./client/config.yaml:/config.yaml 
+        - ./.data/agency-1.csv:/.data/agency-1.csv
     
 networks:
     testing_net:

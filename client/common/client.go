@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"time"
@@ -13,15 +12,11 @@ var log = logging.MustGetLogger("log")
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
-	Nombre        string
-	Apellido      string
-	DNI           string
-	Nacimiento    string
-	Numero        int
+	ID             string
+	ServerAddress  string
+	LoopAmount     int
+	LoopPeriod     time.Duration
+	BatchMaxAmount int
 }
 
 // Client Entity that encapsulates how
@@ -67,21 +62,19 @@ func (c *Client) StartClientLoop() {
 		c.createClientSocket()
 
 		// Send the message to the server
-		msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
-		msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
-		receivedMessage, err := SendMessage(c.conn, msgSend)
+		//msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
+		msg := "30904465,2201,Santiago Lionel,Lorca,1999-03-17,1"
+		receivedMessage, err := SendMessage(c.conn, msg)
 		if err != nil {
-			log.Errorf("action: send_message | result: fail | dni: %v | numero: %v | error: %v",
-				c.config.DNI,
-				c.config.Numero,
+			log.Errorf("action: send_message | result: fail | id:%s | error: %v",
+				c.config.ID,
 				err,
 			)
 			return
 		}
 
-		log.Infof("action: apuesta_enviada | result: success | dni: %s | numero: %d.",
-			c.config.DNI,
-			c.config.Numero,
+		log.Infof("action: apuesta_enviada | result: success | id:%s",
+			c.config.ID,
 		)
 		log.Infof("action: send_message | result: success | received_message: %v", receivedMessage)
 
@@ -111,5 +104,45 @@ func (c *Client) StopClient() {
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
 	os.Exit(0)
+
+}
+
+func (c *Client) SendBatchMessage() {
+	// filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
+	log.Infof("action: send_batch_message | result: success | client_id: %v | file_path: ", c.config.ID)
+	// readFile, err := os.Open(filePath)
+	// if err != nil {
+	// 	log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err)
+	// 	return
+	// }
+	// defer readFile.Close()
+
+	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+func (c *Client) SendBatchMessage2(bet []string, msg string) {
+
+	log.Infof("action: send_message_started | result: success | msg: %s", msg)
+	receivedMessage, err := SendMessage(c.conn, msg)
+	if err != nil {
+		log.Errorf("action: send_message | result: fail | id: %s | dni: %v | error: %v",
+			c.config.ID,
+			bet[2],
+			err,
+		)
+		return
+	}
+
+	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
+		c.config.ID,
+		bet[2],
+	)
+	log.Infof("action: apuesta_enviada | result: success | received_message: %v", receivedMessage)
+
+	err_closing := c.conn.Close()
+	if err_closing != nil {
+		log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+	}
+	c.conn = nil
 
 }
