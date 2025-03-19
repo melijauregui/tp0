@@ -1,8 +1,11 @@
 package common
 
 import (
+	"bufio"
+	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/op/go-logging"
@@ -57,35 +60,8 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount && c.running; msgID++ {
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
-
-		// Send the message to the server
-		//msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
-		msg := "30904465,2201,Santiago Lionel,Lorca,1999-03-17,1"
-		receivedMessage, err := SendMessage(c.conn, msg)
-		if err != nil {
-			log.Errorf("action: send_message | result: fail | id:%s | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
-		}
-
-		log.Infof("action: apuesta_enviada | result: success | id:%s",
-			c.config.ID,
-		)
-		log.Infof("action: send_message | result: success | received_message: %v", receivedMessage)
-
-		err_closing := c.conn.Close()
-		if err_closing != nil {
-			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
-		}
-
-		c.conn = nil
-
-		time.Sleep(c.config.LoopPeriod)
+	if c.running {
+		c.SendBatchMessage()
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
@@ -108,16 +84,40 @@ func (c *Client) StopClient() {
 }
 
 func (c *Client) SendBatchMessage() {
-	// filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
-	log.Infof("action: send_batch_message | result: success | client_id: %v | file_path: ", c.config.ID)
-	// readFile, err := os.Open(filePath)
-	// if err != nil {
-	// 	log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err)
-	// 	return
-	// }
-	// defer readFile.Close()
+	filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
+	readFile, err := os.Open(filePath)
+	if err != nil {
+		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err)
+	}
 
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+
+	msg := ""
+	batchSize := 0
+	bet := []string{}
+
+	for fileScanner.Scan() {
+		fileLine := fileScanner.Text()
+		bet = strings.Split(fileLine, ",")
+		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", bet[2], bet[4], bet[0], bet[1], bet[3], c.config.ID)
+		if batchSize == 0 {
+			c.createClientSocket()
+			batchSize++
+		} else if batchSize < c.config.BatchMaxAmount-1 {
+			batchSize++
+		} else {
+			c.SendBatchMessage2(bet, msg[0:len(msg)-1])
+			batchSize = 0
+			msg = ""
+			time.Sleep(c.config.LoopPeriod)
+		}
+	}
+
+	readFile.Close()
+
+	c.SendBatchMessage2(bet, msg[0:len(msg)-1])
+
 }
 
 func (c *Client) SendBatchMessage2(bet []string, msg string) {
