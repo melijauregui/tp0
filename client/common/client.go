@@ -116,6 +116,9 @@ func (c *Client) SendBatchMessage() {
 
 	readFile.Close()
 
+	if len(msg) == 0 {
+		return
+	}
 	c.SendBatchMessage2(bet, msg[0:len(msg)-1])
 
 }
