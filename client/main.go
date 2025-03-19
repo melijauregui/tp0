@@ -107,12 +107,17 @@ func main() {
 	// Print program config with debugging purposes
 	PrintConfig(v)
 
+	bactchMaxAmount := v.GetInt("batch.maxAmount")
+	if bactchMaxAmount > 11 {
+		bactchMaxAmount = 11
+	}
+
 	clientConfig := common.ClientConfig{
 		ServerAddress:  v.GetString("server.address"),
 		ID:             v.GetString("id"),
 		LoopAmount:     v.GetInt("loop.amount"),
 		LoopPeriod:     v.GetDuration("loop.period"),
-		BatchMaxAmount: v.GetInt("batch.maxAmount"),
+		BatchMaxAmount: bactchMaxAmount,
 	}
 
 	client := common.NewClient(clientConfig)
