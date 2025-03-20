@@ -21,19 +21,16 @@ type Config struct {
 	LoggingLevel  string
 }
 
-// InitConfig reads configuration from environment variables or config.ini.
-// It returns an error if any required parameter is missing or cannot be parsed.
 func InitConfig() (*viper.Viper, error) {
 
 	v := viper.New()
 	v.AutomaticEnv()
-	v.SetEnvPrefix("server")
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	v.BindEnv("port")
-	v.BindEnv("listen", "backlog")
-	v.BindEnv("log", "level")
+	v.BindEnv("default.server_port")
+	v.BindEnv("default.server_listen_backlog")
+	v.BindEnv("default.logging_level")
 
 	v.SetConfigFile("./config.ini")
 	if err := v.ReadInConfig(); err != nil {
@@ -64,9 +61,9 @@ func InitLogger(logLevel string) error {
 
 func PrintConfig(v *viper.Viper) {
 	log.Infof("action: config | result: success | port: %d | listen_backlog: %d | logging_level: %s",
-		v.GetInt("port"),
-		v.GetInt("listen.backlog"),
-		v.GetString("log.level"),
+		v.GetInt("default.server_port"),
+		v.GetInt("default.server_listen_backlog"),
+		v.GetString("default.logging_level"),
 	)
 }
 
@@ -76,15 +73,14 @@ func main() {
 		log.Criticalf("%s", err)
 	}
 
-	if err := InitLogger(v.GetString("log.level")); err != nil {
+	if err := InitLogger("INFO"); err != nil {
 		log.Criticalf("%s", err)
 	}
 
 	PrintConfig(v)
 
 	serverConfig := common.ServerConfig{
-		Port:          v.GetInt("port"),
-		ListenBacklog: v.GetInt("listen.backlog"),
+		Port: v.GetInt("default.server_port"),
 	}
 
 	// Initialize server and start the server loop.

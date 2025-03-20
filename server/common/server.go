@@ -19,8 +19,7 @@ type Server struct {
 }
 
 type ServerConfig struct {
-	Port          int
-	ListenBacklog int
+	Port int
 }
 
 func NewServer(config ServerConfig) (*Server, error) {
