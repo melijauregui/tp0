@@ -19,7 +19,7 @@ def server_content():
         networks:
         - testing_net
         volumes:
-        - ./server/config.yaml:/config.yaml  
+        - ./server/config.ini:/config.ini  
     """
 
 def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero):

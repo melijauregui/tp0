@@ -7,7 +7,7 @@ services:
         networks:
         - testing_net
         volumes:
-        - ./server/config.yaml:/config.yaml  
+        - ./server/config.ini:/config.ini  
     
     client1:
         container_name: client1

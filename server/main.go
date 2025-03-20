@@ -35,7 +35,7 @@ func InitConfig() (*viper.Viper, error) {
 	v.BindEnv("listen", "backlog")
 	v.BindEnv("log", "level")
 
-	v.SetConfigFile("./config.yaml")
+	v.SetConfigFile("./config.ini")
 	if err := v.ReadInConfig(); err != nil {
 		fmt.Printf("Configuration could not be read from config file. Using env variables instead")
 	}
