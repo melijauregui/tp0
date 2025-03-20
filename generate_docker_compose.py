@@ -15,13 +15,11 @@ def server_content():
     server:
         container_name: server
         image: server:latest
-        entrypoint: python3 /main.py
-        environment:
-        - PYTHONUNBUFFERED=1
+        entrypoint: /server
         networks:
         - testing_net
         volumes:
-        - ./server/config.ini:/config.ini  
+        - ./server/config.yaml:/config.yaml  
     """
 
 def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero):

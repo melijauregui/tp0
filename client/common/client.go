@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/7574-sistemas-distribuidos/docker-compose-init/communication_protocol/common"
 	"github.com/op/go-logging"
 )
 
@@ -100,7 +101,7 @@ func (c *Client) SendBatchMessage() {
 	for fileScanner.Scan() {
 		fileLine := fileScanner.Text()
 		bet = strings.Split(fileLine, ",")
-		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", bet[2], bet[4], bet[0], bet[1], bet[3], c.config.ID)
+		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", c.config.ID, bet[0], bet[1], bet[2], bet[3], bet[4])
 		if batchSize == 0 {
 			c.createClientSocket()
 			batchSize++
@@ -126,12 +127,22 @@ func (c *Client) SendBatchMessage() {
 func (c *Client) SendBatchMessage2(bet []string, msg string) {
 
 	log.Infof("action: send_message_started | result: success | msg: %s", msg)
-	receivedMessage, err := SendMessage(c.conn, msg)
-	if err != nil {
+	err_sending_msg := common.SendMessage(c.conn, msg)
+	if err_sending_msg != nil {
 		log.Errorf("action: send_message | result: fail | id: %s | dni: %v | error: %v",
 			c.config.ID,
 			bet[2],
-			err,
+			err_sending_msg,
+		)
+		return
+	}
+
+	receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
+	if err_reading_msg != nil {
+		log.Errorf("action: read_message | result: fail | id: %s | dni: %v | error: %v",
+			c.config.ID,
+			bet[2],
+			err_reading_msg,
 		)
 		return
 	}
@@ -144,7 +155,7 @@ func (c *Client) SendBatchMessage2(bet []string, msg string) {
 
 	err_closing := c.conn.Close()
 	if err_closing != nil {
-		log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+		log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
 	}
 	c.conn = nil
 

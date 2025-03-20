@@ -9,29 +9,28 @@ import (
 )
 
 // mensaje con formato `<longitud>:<msg>` y recibe respuesta
-func SendMessage(conn net.Conn, msg string) (string, error) {
+func SendMessage(conn net.Conn, msg string) error {
 	msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
 	//enviar mensaje
 	n_write, err := fmt.Fprint(conn, msgSend)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	//asegurarse de que se envió todo el mensaje
 	for n_write < len(msgSend) {
 		n_write2, err := fmt.Fprint(conn, msgSend[n_write:])
 		if err != nil {
-			return "", err
+			return err
 		}
 		n_write += n_write2
 	}
 
-	//leer respuesta
-	return ReadMessage(conn, msgSend)
+	return nil
 }
 
 // mensaje con formato `<longitud>:<msg>`
-func ReadMessage(conn net.Conn, msg string) (string, error) {
+func ReadMessage(conn net.Conn) (string, error) {
 	reader := bufio.NewReader(conn)
 	totalBytesStr, err := reader.ReadString(':')
 	if err != nil {

@@ -1,0 +1,6 @@
+port: 12345
+ip: server
+listen:
+  backlog: 128
+log:
+  level: "INFO"
