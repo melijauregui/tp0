@@ -40,8 +40,6 @@ func InitConfig() (*viper.Viper, error) {
 	return v, nil
 }
 
-// InitLogger sets up the logging format.
-// Note: The standard log package does not support logging levels by default.
 func InitLogger(logLevel string) error {
 	baseBackend := logging.NewLogBackend(os.Stdout, "", 0)
 	format := logging.MustStringFormatter(
@@ -83,8 +81,6 @@ func main() {
 		Port: v.GetInt("default.server_port"),
 	}
 
-	// Initialize server and start the server loop.
-	// Note: The Server implementation is assumed to be defined in the same package.
 	server, err := common.NewServer(serverConfig)
 	if err != nil {
 		log.Fatalf("action: start server | result: success | Failed to start server: %v", err)

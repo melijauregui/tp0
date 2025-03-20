@@ -51,16 +51,14 @@ func (s *Server) GracefulShutdown() {
 	os.Exit(0)
 }
 
-// Run starts the main server loop and listens for termination signals.
 func (s *Server) Run() {
-	// Main server loop.
 	for s.running {
 		conn, err := s.acceptNewConnection()
 		if err != nil {
 			if !s.running {
 				break
 			}
-			log.Infof("action: accept_connections | result: fail | error: %v", err)
+			log.Errorf("action: accept_connections | result: fail | error: %v", err)
 			continue
 		}
 		s.clientConn = conn
@@ -97,7 +95,7 @@ func (s *Server) handleClientConnection() {
 		}
 		newBet, err_creating_bet := NewBet(betInfo[0], betInfo[1], betInfo[2], betInfo[3], betInfo[4], betInfo[5])
 		if err_creating_bet != nil {
-			log.Infof("action: create_bet | result: fail | error: %v", err_creating_bet)
+			log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
 			continue
 		}
 		betList = append(betList, newBet)
@@ -109,7 +107,7 @@ func (s *Server) handleClientConnection() {
 	msgServer := "Apuesta almacenada"
 	err_sending_msg := common.SendMessage(s.clientConn, msgServer)
 	if err_sending_msg != nil {
-		log.Infof("action: sending server message | result: fail | error: %v", err_sending_msg)
+		log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
 	} else {
 		log.Infof("action: sending server message | result: success | msg_server: %d:%s", len(msgServer), msgServer)
 	}

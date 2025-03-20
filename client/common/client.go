@@ -62,7 +62,7 @@ func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 	if c.running {
-		c.SendBatchMessage()
+		c.SendBatchMessages()
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
@@ -84,7 +84,7 @@ func (c *Client) StopClient() {
 
 }
 
-func (c *Client) SendBatchMessage() {
+func (c *Client) SendBatchMessages() {
 	filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
 	readFile, err := os.Open(filePath)
 	if err != nil {
@@ -108,23 +108,27 @@ func (c *Client) SendBatchMessage() {
 		} else if batchSize < c.config.BatchMaxAmount-1 {
 			batchSize++
 		} else {
-			c.SendBatchMessage2(bet, msg[0:len(msg)-1])
+			c.SendBatchMessage(bet, msg[0:len(msg)-1])
 			batchSize = 0
 			msg = ""
 			time.Sleep(c.config.LoopPeriod)
 		}
 	}
 
-	readFile.Close()
+	error_closin_file := readFile.Close()
+	if error_closin_file != nil {
+		log.Errorf("action: closing file | client_id: %v | result: fail | error: %v", c.config.ID, error_closin_file)
+	}
+	log.Infof("action: closing file | client_id: %v | result: success", c.config.ID)
 
 	if len(msg) > 0 {
-		c.SendBatchMessage2(bet, msg[0:len(msg)-1])
+		c.SendBatchMessage(bet, msg[0:len(msg)-1])
 	}
 	time.Sleep(5 * time.Second)
 
 }
 
-func (c *Client) SendBatchMessage2(bet []string, msg string) {
+func (c *Client) SendBatchMessage(bet []string, msg string) {
 
 	log.Infof("action: send_message_started | result: success | msg: %s", msg)
 	err_sending_msg := common.SendMessage(c.conn, msg)
@@ -157,6 +161,7 @@ func (c *Client) SendBatchMessage2(bet []string, msg string) {
 	if err_closing != nil {
 		log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
 	}
+	log.Infof("action: connection closed | client_id: %v | result: success", c.config.ID)
 	c.conn = nil
 
 }
