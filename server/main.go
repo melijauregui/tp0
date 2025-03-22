@@ -28,6 +28,8 @@ func InitConfig() (*viper.Viper, error) {
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
+	v.SetEnvPrefix("server")
+	v.BindEnv("number_of_agencies")
 	v.BindEnv("default.server_port")
 	v.BindEnv("default.server_listen_backlog")
 	v.BindEnv("default.logging_level")
@@ -58,10 +60,11 @@ func InitLogger(logLevel string) error {
 }
 
 func PrintConfig(v *viper.Viper) {
-	log.Infof("action: config | result: success | port: %d | listen_backlog: %d | logging_level: %s",
+	log.Infof("action: config | result: success | port: %d | listen_backlog: %d | logging_level: %s | number_of_agencies: %d",
 		v.GetInt("default.server_port"),
 		v.GetInt("default.server_listen_backlog"),
 		v.GetString("default.logging_level"),
+		v.GetInt("number_of_agencies"),
 	)
 }
 
@@ -78,7 +81,8 @@ func main() {
 	PrintConfig(v)
 
 	serverConfig := common.ServerConfig{
-		Port: v.GetInt("default.server_port"),
+		Port:             v.GetInt("default.server_port"),
+		NumberOfAgencies: v.GetInt("number_of_agencies"),
 	}
 
 	server, err := common.NewServer(serverConfig)

@@ -13,18 +13,18 @@ import (
 
 var log = logging.MustGetLogger("log")
 
-const agencies_number = 5
-
 type Server struct {
-	listener        net.Listener
-	clientConn      net.Conn
-	running         bool
-	agenciesWaiting map[int]string
-	winnerRevealed  bool
+	listener         net.Listener
+	clientConn       net.Conn
+	running          bool
+	agenciesWaiting  map[int]string
+	winnerRevealed   bool
+	numberOfAgencies int
 }
 
 type ServerConfig struct {
-	Port int
+	Port             int
+	NumberOfAgencies int
 }
 
 func NewServer(config ServerConfig) (*Server, error) {
@@ -34,10 +34,11 @@ func NewServer(config ServerConfig) (*Server, error) {
 		return nil, err
 	}
 	server := &Server{
-		listener:        listener,
-		running:         true,
-		winnerRevealed:  false,
-		agenciesWaiting: map[int]string{},
+		listener:         listener,
+		running:          true,
+		winnerRevealed:   false,
+		agenciesWaiting:  map[int]string{},
+		numberOfAgencies: config.NumberOfAgencies,
 	}
 	return server, nil
 }
@@ -71,7 +72,7 @@ func (s *Server) Run() {
 		s.clientConn = conn
 		s.handleClientConnection()
 
-		if !s.winnerRevealed && len(s.agenciesWaiting) == agencies_number {
+		if !s.winnerRevealed && len(s.agenciesWaiting) == s.numberOfAgencies {
 			s.winnerRevealed = true
 			s.revealWinners()
 		}

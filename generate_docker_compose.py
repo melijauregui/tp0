@@ -4,25 +4,27 @@ def create_file(name_file, number_of_clients):
     with open(name_file, "w") as file:
         file.write("name: tp0\n")
         file.write("services:\n")
-        file.write(server_content() + "\n")
-        file.write(clients_content(number_of_clients, "Juan", "Perez", "12345678", "1990-01-01", "123456789"))
+        file.write(server_content(number_of_clients) + "\n")
+        file.write(clients_content(number_of_clients))
         file.write(network_content())
     
     
     
-def server_content():
+def server_content(number_of_clients):
     return f"""\
     server:
         container_name: server
         image: server:latest
         entrypoint: /server
+        environment:
+        - SERVER_NUMBER_OF_AGENCIES={number_of_clients}
         networks:
         - testing_net
         volumes:
         - ./server/config.ini:/config.ini  
     """
 
-def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero):
+def clients_content(number_of_clients):
     content = ""
     for i in range(1, number_of_clients+1):
         content += f"""\
