@@ -53,6 +53,7 @@ func (c *Client) createClientSocket() error {
 			err,
 		)
 	}
+	log.Infof("action: connect | result: success | client_id: %v", c.config.ID)
 	c.conn = conn
 	return nil
 }

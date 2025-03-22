@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/server/common"
 	"github.com/op/go-logging"
@@ -92,9 +93,12 @@ func main() {
 	go HandleSignals(server)
 
 	server.Run()
+	time.Sleep(1 * time.Second)
+
 }
 
 func HandleSignals(s *common.Server) {
+
 	sigChannel := make(chan os.Signal, 1) // espera las signals
 	//crea un canal (chan) en Go que puede recibir valores del tipo os.Signal
 	//el 1 en make(chan os.Signal, 1) significa que es un canal con buffer de tamaño 1
@@ -103,7 +107,6 @@ func HandleSignals(s *common.Server) {
 	//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
 	<-sigChannel
 	//Bloquea la ejecución hasta que el canal reciba una señal.
-
 	s.GracefulShutdown()
 	os.Exit(0)
 }
