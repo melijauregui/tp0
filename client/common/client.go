@@ -130,9 +130,9 @@ func (c *Client) SendBatchMessages() {
 
 	error_closin_file := readFile.Close()
 	if error_closin_file != nil {
-		log.Errorf("action: closing file | client_id: %v | result: fail | error: %v", c.config.ID, error_closin_file)
+		log.Errorf("action: closing file | result: fail | client_id: %v | error: %v", c.config.ID, error_closin_file)
 	}
-	log.Infof("action: closing file | client_id: %v | result: success", c.config.ID)
+	log.Infof("action: closing file | result: success | client_id: %v", c.config.ID)
 
 	if len(msg) > 0 {
 		c.SendBatchMessage(bet, msg[0:len(msg)-1])
