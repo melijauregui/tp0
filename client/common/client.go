@@ -85,7 +85,7 @@ func (c *Client) StopClient() {
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
-			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+			log.Errorf("action: connection closed | result: success | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err)
 		} else {
 			log.Infof("action: graceful_shutdown client connection | result: success | client_id: %v", c.config.ID)
 		}
@@ -101,7 +101,7 @@ func (c *Client) SendBatchMessages() {
 	filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
 	readFile, err := os.Open(filePath)
 	if err != nil {
-		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err)
+		log.Errorf("action: sending batch message | result: fail | client_id: %v | error : %v", c.config.ID, err)
 	}
 
 	fileScanner := bufio.NewScanner(readFile)
@@ -167,9 +167,9 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 
 	err_closing := c.conn.Close()
 	if err_closing != nil {
-		log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
+		log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
 	}
-	log.Infof("action: connection closed | client_id: %v | result: success", c.config.ID)
+	log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
 	c.conn = nil
 
 }
@@ -228,9 +228,9 @@ func (c *Client) WaitForWinners() error {
 		}
 		err_closing := c.conn.Close()
 		if err_closing != nil {
-			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
+			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
 		}
-		log.Infof("action: connection closed | client_id: %v | result: success", c.config.ID)
+		log.Infof("action: connection closed | result: success | client_id: %v", c.config.ID)
 		c.conn = nil
 		if !knowsWinners {
 			i++
