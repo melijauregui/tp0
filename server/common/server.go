@@ -164,6 +164,7 @@ func (s *Server) handleAgencyWaitingMessage(clientConn net.Conn, msgStr string) 
 func (s *Server) canRevealWinners() {
 	s.lockWinnerRevealed.Lock()
 	if !s.winnerRevealed && len(s.agenciesWaiting) == s.numberOfAgencies {
+		log.Infof("action: sorteo | result: success")
 		s.betsLock.Lock()
 		bets, err_loading_bets := LoadBets()
 		s.betsLock.Unlock()
@@ -181,7 +182,6 @@ func (s *Server) canRevealWinners() {
 			}
 		}
 		s.winnerRevealed = true
-		log.Infof("action: sorteo | result: success")
 	}
 	s.lockWinnerRevealed.Unlock()
 }
