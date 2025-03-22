@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/communication_protocol/common"
@@ -12,10 +13,14 @@ import (
 
 var log = logging.MustGetLogger("log")
 
+const agencies_number = 5
+
 type Server struct {
-	listener   net.Listener
-	clientConn net.Conn
-	running    bool
+	listener        net.Listener
+	clientConn      net.Conn
+	running         bool
+	agenciesWaiting map[int]string
+	winnerRevealed  bool
 }
 
 type ServerConfig struct {
@@ -29,8 +34,10 @@ func NewServer(config ServerConfig) (*Server, error) {
 		return nil, err
 	}
 	server := &Server{
-		listener: listener,
-		running:  true,
+		listener:        listener,
+		running:         true,
+		winnerRevealed:  false,
+		agenciesWaiting: map[int]string{},
 	}
 	return server, nil
 }
@@ -63,6 +70,11 @@ func (s *Server) Run() {
 		}
 		s.clientConn = conn
 		s.handleClientConnection()
+
+		if !s.winnerRevealed && len(s.agenciesWaiting) == agencies_number {
+			s.winnerRevealed = true
+			s.revealWinners()
+		}
 	}
 }
 
@@ -84,7 +96,14 @@ func (s *Server) handleClientConnection() {
 		return
 	}
 
-	// Parse bets from the message.
+	if strings.Contains(msgStr, "Winners, please?") {
+		s.handleAgencyWaitingMessage(msgStr)
+	} else {
+		s.handleStoreBetsMessage(msgStr)
+	}
+}
+
+func (s *Server) handleStoreBetsMessage(msgStr string) {
 	var betList []Bet
 	betsSplit := strings.Split(msgStr, ";")
 	for _, bet := range betsSplit {
@@ -109,8 +128,57 @@ func (s *Server) handleClientConnection() {
 	if err_sending_msg != nil {
 		log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
 	} else {
-		log.Infof("action: sending server message | result: success | msg_server: %d:%s", len(msgServer), msgServer)
+		log.Infof("action: sending server message | result: success | msg_server: %s", msgServer)
 	}
+}
+
+func (s *Server) handleAgencyWaitingMessage(msgStr string) {
+	msgSplit := strings.Split(msgStr, ",")
+	agency, err_convert := strconv.Atoi(msgSplit[0])
+
+	if err_convert != nil {
+		log.Errorf("action: convert_agency | result: fail | error: %v", err_convert)
+		return
+	}
+	msg := ""
+	if s.winnerRevealed {
+		msg = s.agenciesWaiting[agency]
+		if len(msg) > 0 {
+			msg = msg[0 : len(msg)-1]
+		}
+		log.Infof("action: send winners agency | result: success | agency: %d", agency)
+	} else {
+		msg = "No winners yet"
+		s.agenciesWaiting[agency] = ""
+		log.Infof("action: waiting agency | result: success | agency: %d", agency)
+	}
+
+	log.Infof("action: send msg to waiting agency | result: success | msg: %s", msg)
+
+	err_sending_msg := common.SendMessage(s.clientConn, msg)
+	if err_sending_msg != nil {
+		log.Errorf("action: send client message | result: fail | error: %v", err_sending_msg)
+	} else {
+		log.Infof("action: send client message | result: success | msg_server: %s", msg)
+	}
+
+}
+
+func (s *Server) revealWinners() {
+	bets, err_loading_bets := LoadBets()
+	if err_loading_bets != nil {
+		log.Errorf("action: load_bets | result: fail | error: %v", err_loading_bets)
+		return
+	}
+	for _, bet := range bets {
+		if !s.running {
+			break
+		}
+		if HasWon(bet) {
+			s.agenciesWaiting[bet.Agency] += fmt.Sprintf("%s;", bet.Document)
+		}
+	}
+	log.Infof("action: reveal_winners | result: success")
 }
 
 // acceptNewConnection waits for a new client connection.

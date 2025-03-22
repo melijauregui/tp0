@@ -63,6 +63,19 @@ func (c *Client) StartClientLoop() {
 	// Messages if the message amount threshold has not been surpassed
 	if c.running {
 		c.SendBatchMessages()
+
+		intentos := 0
+		for intentos < c.config.LoopAmount {
+			err_wating_winners := c.WaitForWinners()
+			if err_wating_winners != nil {
+				log.Errorf("action: waiting_winners | result: fail | client_id: %v | error: %v", c.config.ID, err_wating_winners)
+				intentos++
+			} else {
+				break
+			}
+		}
+		time.Sleep(5 * time.Second)
+
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
@@ -124,7 +137,6 @@ func (c *Client) SendBatchMessages() {
 	if len(msg) > 0 {
 		c.SendBatchMessage(bet, msg[0:len(msg)-1])
 	}
-	time.Sleep(5 * time.Second)
 
 }
 
@@ -151,10 +163,6 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 		return
 	}
 
-	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
-		c.config.ID,
-		bet[2],
-	)
 	log.Infof("action: apuesta_enviada | result: success | received_message: %v", receivedMessage)
 
 	err_closing := c.conn.Close()
@@ -164,4 +172,70 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 	log.Infof("action: connection closed | client_id: %v | result: success", c.config.ID)
 	c.conn = nil
 
+}
+
+func (c *Client) WaitForWinners() error {
+	log.Infof("action: waiting_winners | result: in_progress | client_id: %v", c.config.ID)
+	knowsWinners := false
+	i := 0
+	for !knowsWinners && c.running {
+		err_creating_socket := c.createClientSocket()
+		if err_creating_socket != nil {
+			log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err_creating_socket)
+			return err_creating_socket
+		}
+		msg := fmt.Sprintf("%s,%s;", c.config.ID, "Winners, please?")
+		err_sending_msg := common.SendMessage(c.conn, msg)
+		if err_sending_msg != nil {
+			log.Errorf("action: send_message | result: fail | id: %s | error: %v",
+				c.config.ID,
+				err_sending_msg,
+			)
+			return err_sending_msg
+		}
+
+		receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
+		if err_reading_msg != nil {
+			log.Errorf("action: read_message | result: fail | id: %s | error: %v",
+				c.config.ID,
+				err_reading_msg,
+			)
+			return err_reading_msg
+		}
+
+		if receivedMessage == "No winners yet" {
+			log.Infof("action: winners_received | result: success | id: %s | received_message: '%v'",
+				c.config.ID,
+				receivedMessage,
+			)
+		} else {
+			knowsWinners = true
+			log.Infof("action: winners_received | result: success | id: %s | received_message: '%v'",
+				c.config.ID,
+				receivedMessage,
+			)
+			var number_winners int
+			if receivedMessage != "" {
+				number_winners = len(strings.Split(receivedMessage, ";"))
+			} else {
+				number_winners = 0
+			}
+
+			log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d | id: %s ",
+				number_winners,
+				c.config.ID,
+			)
+		}
+		err_closing := c.conn.Close()
+		if err_closing != nil {
+			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
+		}
+		log.Infof("action: connection closed | client_id: %v | result: success", c.config.ID)
+		c.conn = nil
+		if !knowsWinners {
+			i++
+			time.Sleep(time.Duration(i) * time.Second)
+		}
+	}
+	return nil
 }
