@@ -73,6 +73,7 @@ func (s *Server) Run() {
 		s.handleClientConnection()
 
 		if !s.winnerRevealed && len(s.agenciesWaiting) == s.numberOfAgencies {
+			log.Infof("action: sorteo | result: success")
 			s.winnerRevealed = true
 			s.revealWinners()
 		}
