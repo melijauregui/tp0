@@ -69,3 +69,25 @@ La respuesta del servidor ante la recepción de una apuesta también se envía c
 - `"Apuesta no almacenada"`: si ocurrió algún error durante el envío o procesamiento del mensaje.
 
 Esta respuesta permite al cliente validar si la apuesta fue registrada con éxito o si es necesario reintentar o informar un error.
+
+### Ejercicio N°6:
+
+Para este ejercicio, cada mensaje enviado al servidor corresponde a un **batch message**, cuyo formato es similar al utilizado en el ejercicio 5, con la diferencia de que ahora se agrupan múltiples apuestas en un mismo mensaje, separadas por punto y coma (`;`). El formato general es:
+
+```
+apuesta1;apuesta2;...;apuesta_n
+```
+
+donde `n` representa la cantidad máxima de apuestas por batch, o una cantidad menor si no quedan más apuestas por enviar.
+
+El cliente procesa el archivo `client_{id}.csv` leyendo línea por línea y concatenando las apuestas en un único string que representa el mensaje del batch a enviar al servidor.
+
+Para definir el valor por defecto de la cantidad de apuestas por batch (`batch.maxAmount`), se asumió que cada línea del CSV ocupa como máximo 100 caracteres. Esta estimación se basa en los ejemplos provistos, donde incluso las líneas más largas no superan dicha longitud. Dado que el tamaño máximo de un mensaje es de 8 KB, se estableció un valor por defecto de 100 apuestas por batch, ya que este límite garantiza que el mensaje no supere el tamaño permitido.
+
+Además, se incorporó un nuevo atributo `fileReader` al cliente para mantener una referencia al archivo abierto, lo que permite cerrarlo adecuadamente al momento de realizar un shutdown de manera *graceful*.
+
+Por cada batch enviado, el servidor responde con un mensaje `{cantidad} apuestas almacenadas` indicando la cantidad de apuestas que fueron almacenadas correctamente. Esta respuesta permite al cliente verificar si todas las apuestas del batch fueron recibidas con éxito. En función de esta validación, el cliente imprime:
+
++ `action: apuesta_enviada | result: success`, si la cantidad almacenada coincide con la cantidad enviada.
+
++ `action: apuesta_enviada | result: fail`, si hubo algún error en el almacenamiento de alguna apuesta.
