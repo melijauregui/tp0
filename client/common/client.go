@@ -86,10 +86,18 @@ func (c *Client) StopClient() {
 
 func (c *Client) SendBatchMessages() {
 	filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
-	readFile, err := os.Open(filePath)
-	if err != nil {
-		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err)
+	readFile, err_opening_file := os.Open(filePath)
+	if err_opening_file != nil {
+		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err_opening_file)
 	}
+
+	defer func() {
+		if error_closing_file := readFile.Close(); error_closing_file != nil {
+			log.Errorf("action: closing file | client_id: %v | result: fail | error: %v", c.config.ID, error_closing_file)
+		} else {
+			log.Infof("action: closing file | client_id: %v | result: success", c.config.ID)
+		}
+	}()
 
 	fileScanner := bufio.NewScanner(readFile)
 	fileScanner.Split(bufio.ScanLines)
@@ -101,6 +109,10 @@ func (c *Client) SendBatchMessages() {
 	for fileScanner.Scan() {
 		fileLine := fileScanner.Text()
 		bet = strings.Split(fileLine, ",")
+		if len(bet) != 5 {
+			log.Errorf("action: sending batch message | client_id: %v | result: fail | error: invalid bet format", c.config.ID)
+			continue
+		}
 		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", c.config.ID, bet[0], bet[1], bet[2], bet[3], bet[4])
 		if batchSize == 0 {
 			c.createClientSocket()
@@ -114,12 +126,6 @@ func (c *Client) SendBatchMessages() {
 			time.Sleep(c.config.LoopPeriod)
 		}
 	}
-
-	error_closin_file := readFile.Close()
-	if error_closin_file != nil {
-		log.Errorf("action: closing file | client_id: %v | result: fail | error: %v", c.config.ID, error_closin_file)
-	}
-	log.Infof("action: closing file | client_id: %v | result: success", c.config.ID)
 
 	if len(msg) > 0 {
 		c.SendBatchMessage(bet, msg[0:len(msg)-1])
@@ -140,6 +146,10 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 		)
 		return
 	}
+	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
+		c.config.ID,
+		bet[2],
+	)
 
 	receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
 	if err_reading_msg != nil {
@@ -151,11 +161,19 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 		return
 	}
 
-	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
-		c.config.ID,
-		bet[2],
-	)
-	log.Infof("action: apuesta_enviada | result: success | received_message: %v", receivedMessage)
+	if receivedMessage != fmt.Sprintf("%d apuestas almacenadas", len(strings.Split(msg, ";"))) {
+		log.Errorf("action: apuesta_enviada | result: fail | id: %s | dni: %v | received_message: %v",
+			c.config.ID,
+			bet[2],
+			receivedMessage,
+		)
+	} else {
+		log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %v | received_message: %v",
+			c.config.ID,
+			bet[2],
+			receivedMessage,
+		)
+	}
 
 	err_closing := c.conn.Close()
 	if err_closing != nil {

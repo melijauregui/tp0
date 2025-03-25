@@ -5,10 +5,8 @@ def create_file(name_file, number_of_clients):
         file.write("name: tp0\n")
         file.write("services:\n")
         file.write(server_content() + "\n")
-        file.write(clients_content(number_of_clients, "Juan", "Perez", "12345678", "1990-01-01", "123456789"))
+        file.write(clients_content(number_of_clients))
         file.write(network_content())
-    
-    
     
 def server_content():
     return f"""\
@@ -22,7 +20,7 @@ def server_content():
         - ./server/config.ini:/config.ini  
     """
 
-def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero):
+def clients_content(number_of_clients):
     content = ""
     for i in range(1, number_of_clients+1):
         content += f"""\
@@ -42,6 +40,9 @@ def clients_content(number_of_clients, nombre, apellido, dni, nacimiento, numero
     """
         content += "\n"
     return content
+
+# entrypoint: significa que cuando se levante el contenedor client{i}, el proceso principal que se va a ejecutar 
+# será el ejecutable /client dentro del contenedor.
 
 def network_content():
     return """\

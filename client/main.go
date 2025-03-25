@@ -90,7 +90,7 @@ func PrintConfig(v *viper.Viper) {
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
-		v.GetInt("batch.maxAmount"),
+		getMaxAmount(v),
 	)
 }
 
@@ -112,7 +112,7 @@ func main() {
 		ID:             v.GetString("id"),
 		LoopAmount:     v.GetInt("loop.amount"),
 		LoopPeriod:     v.GetDuration("loop.period"),
-		BatchMaxAmount: v.GetInt("batch.maxAmount"),
+		BatchMaxAmount: getMaxAmount(v),
 	}
 
 	client := common.NewClient(clientConfig)
@@ -133,4 +133,12 @@ func HandleSignals(c *common.Client) {
 
 	c.StopClient()
 	os.Exit(0)
+}
+
+func getMaxAmount(v *viper.Viper) int {
+	value := v.GetInt("batch.maxAmount")
+	if value < 0 || value > 100 {
+		return 100
+	}
+	return value
 }

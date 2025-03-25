@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/communication_protocol/common"
 	"github.com/op/go-logging"
@@ -64,6 +65,7 @@ func (s *Server) Run() {
 		s.clientConn = conn
 		s.handleClientConnection()
 	}
+	time.Sleep(5 * time.Second)
 }
 
 // handleClientConnection processes the client connection by reading the message,
@@ -86,30 +88,37 @@ func (s *Server) handleClientConnection() {
 
 	// Parse bets from the message.
 	var betList []Bet
+	error_in_bets := false
 	betsSplit := strings.Split(msgStr, ";")
 	for _, bet := range betsSplit {
 		betInfo := strings.Split(bet, ",")
 		if len(betInfo) < 6 {
-			// skip invalid bets.
+			error_in_bets = true
 			continue
 		}
 		newBet, err_creating_bet := NewBet(betInfo[0], betInfo[1], betInfo[2], betInfo[3], betInfo[4], betInfo[5])
 		if err_creating_bet != nil {
 			log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
+			error_in_bets = true
 			continue
 		}
 		betList = append(betList, newBet)
 	}
 
 	StoreBets(betList)
-	log.Infof("action: apuesta_recibida | result: success | cantidad: %d", len(betList))
+	if error_in_bets {
+		log.Errorf("action: apuesta_recibida | result: fail | cantidad: %d", len(betList))
+	} else {
+		log.Infof("action: apuesta_recibida | result: success | cantidad: %d", len(betList))
+	}
 
-	msgServer := "Apuesta almacenada"
+	msgServer := fmt.Sprintf("%d apuestas almacenadas", len(betList))
+
 	err_sending_msg := common.SendMessage(s.clientConn, msgServer)
 	if err_sending_msg != nil {
 		log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
 	} else {
-		log.Infof("action: sending server message | result: success | msg_server: %d:%s", len(msgServer), msgServer)
+		log.Infof("action: sending server message | result: success | msg_server: %s", msgServer)
 	}
 }
 
