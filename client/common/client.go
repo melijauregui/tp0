@@ -83,9 +83,9 @@ func (c *Client) StopClient() {
 	if c.fileReader != nil {
 		err := c.fileReader.Close()
 		if err != nil {
-			log.Errorf("action: closing file | client_id: %v | result: fail | error: %v", c.config.ID, err)
+			log.Errorf("action: closing file | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		} else {
-			log.Infof("action: closing file | client_id: %v | result: success", c.config.ID)
+			log.Infof("action: closing file | result: success | client_id: %v", c.config.ID)
 		}
 		c.fileReader = nil
 	}
@@ -105,9 +105,9 @@ func (c *Client) SendBatchMessages() {
 
 	defer func() {
 		if error_closing_file := readFile.Close(); error_closing_file != nil {
-			log.Errorf("action: closing file | client_id: %v | result: fail | error: %v", c.config.ID, error_closing_file)
+			log.Errorf("action: closing file | result: fail | client_id: %v | error: %v", c.config.ID, error_closing_file)
 		} else {
-			log.Infof("action: closing file | client_id: %v | result: success", c.config.ID)
+			log.Infof("action: closing file | result: success | client_id: %v | result: success", c.config.ID)
 		}
 	}()
 
@@ -122,7 +122,7 @@ func (c *Client) SendBatchMessages() {
 		fileLine := fileScanner.Text()
 		bet = strings.Split(fileLine, ",")
 		if len(bet) != 5 {
-			log.Errorf("action: sending batch message | client_id: %v | result: fail | error: invalid bet format", c.config.ID)
+			log.Errorf("action: sending batch message | result: fail | client_id: %v | error: invalid bet format", c.config.ID)
 			continue
 		}
 		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", c.config.ID, bet[0], bet[1], bet[2], bet[3], bet[4])
