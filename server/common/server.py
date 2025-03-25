@@ -1,7 +1,7 @@
 import socket
 import logging
 
-
+#the server will exit with code 137 because the container received a docker stop and the app is not gracefully handling SIGTERM
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
