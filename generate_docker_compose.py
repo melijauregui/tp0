@@ -8,8 +8,6 @@ def create_file(name_file, number_of_clients):
         file.write(clients_content(number_of_clients))
         file.write(network_content())
     
-    
-    
 def server_content():
     return """\
     server:
@@ -41,6 +39,9 @@ def clients_content(number_of_clients):
     """
         content += "\n"
     return content
+
+# entrypoint: significa que cuando se levante el contenedor client{i}, el proceso principal que se va a ejecutar 
+# será el ejecutable /client dentro del contenedor.
 
 def network_content():
     return """\
