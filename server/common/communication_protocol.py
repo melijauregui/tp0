@@ -4,7 +4,8 @@ def send_message(sock, msg):
     """
     mensaje con formato `<longitud>:<msg>` y espera una respuesta.
     """
-    msg_bytes = msg.encode()  
+    msg_to_send = f"{len(msg)}:{msg}"
+    msg_bytes = msg_to_send.encode()  
     total_length = len(msg_bytes)
     
     # asegura que se envía todo el mensaje

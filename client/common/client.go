@@ -67,14 +67,13 @@ func (c *Client) StartClientLoop() {
 		c.createClientSocket()
 
 		// Send the message to the server
-		msg := fmt.Sprintf("%s,%d,%s,%s,%s,%s", c.config.DNI, c.config.Numero, c.config.Nombre, c.config.Apellido, c.config.Nacimiento, c.config.ID)
-		msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
-		receivedMessage, err := SendMessage(c.conn, msgSend)
-		if err != nil {
+		msgSend := fmt.Sprintf("%s,%s,%s,%s,%s,%d", c.config.ID, c.config.Nombre, c.config.Apellido, c.config.DNI, c.config.Nacimiento, c.config.Numero)
+		err_sending := SendMessage(c.conn, msgSend)
+		if err_sending != nil {
 			log.Errorf("action: send_message | result: fail | dni: %v | numero: %v | error: %v",
 				c.config.DNI,
 				c.config.Numero,
-				err,
+				err_sending,
 			)
 			return
 		}
@@ -83,11 +82,29 @@ func (c *Client) StartClientLoop() {
 			c.config.DNI,
 			c.config.Numero,
 		)
-		log.Infof("action: send_message | result: success | received_message: %v", receivedMessage)
+
+		receivedMessage, err_reading := ReadMessage(c.conn)
+		if err_reading != nil {
+			log.Errorf("action: read_message | result: fail | dni: %v | numero: %v | error: %v",
+				c.config.DNI,
+				c.config.Numero,
+				err_reading,
+			)
+			return
+		}
+
+		if receivedMessage == "Apuesta almacenada" {
+			log.Infof("action: send_message | result: success | received_message: %v", receivedMessage)
+		} else {
+			log.Errorf("action: send_message | result: fail | received_message: %v", receivedMessage)
+		}
 
 		err_closing := c.conn.Close()
+
 		if err_closing != nil {
-			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
+		} else {
+			log.Infof("action: connection closed | result: success | client_id: %v", c.config.ID)
 		}
 
 		c.conn = nil

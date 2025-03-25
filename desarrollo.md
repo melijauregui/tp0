@@ -22,14 +22,50 @@ El contenedor se conecta a la red de Docker definida en el `docker-compose` (`tp
 
 En caso de validación exitosa, el script imprime:
 
-``action: test_echo_server | result: success``
+```
+action: test_echo_server | result: success
+```
 
 De lo contrario, imprime:
 
-``action: test_echo_server | result: fail``
+```
+action: test_echo_server | result: fail
+```
 
 
 ### Ejercicio N°4:
 Se modificó el servidor para que, al recibir la señal `SIGTERM`, cierre tanto la conexión actual con el cliente (`self._client_socket`) como el socket (`self._server_socket`) que utiliza para escuchar nuevas conexiones. Además, el handler de esta señal, luego de cerrar los recursos, finaliza el proceso utilizando `sys.exit(0)`. De esta forma, aunque el hilo principal se encuentre bloqueado en una llamada a `accept()`, el proceso termina de manera controlada. Esto se debe a que `sys.exit(0)` lanza una excepción `SystemExit`, que detiene el hilo principal sin mostrar errores ni tracebacks, ignorando cualquier excepción que pudiera haberse producido por el cierre del socket.
 
 En el caso del cliente, se implementó una goroutine que escucha la señal `SIGTERM`. Al recibirla, el cliente actualiza su atributo `running` a `false` el cual detiene el envío de mensajes y, si existe una conexión activa con el servidor (`c.conn`), la cierra. Esto permite que el cliente finalice su ejecución de forma graceful, liberando correctamente los recursos utilizados.
+
+## Parte 2: Repaso de Comunicaciones
+
+### Ejercicio N°5:
+#### Protocolo de comunicación
+
+El protocolo de comunicación utilizado para el envío y recepción de paquetes se encuentra implementado en los archivos `communication_protocol.go` (cliente) y `communication_protocol.py` (servidor).  
+Este protocolo define que los mensajes se envían como cadenas de texto con el siguiente formato:
+
+```
+<longitud_del_mensaje:mensaje>
+```
+
+La inclusión del prefijo de longitud permite al receptor saber exactamente cuántos bytes debe leer, lo cual facilita una correcta delimitación de los mensajes.
+Además, este diseño simplifica la implementación de la lógica necesaria para manejar short reads y short writes, que pueden ocurrir cuando las operaciones de lectura o escritura no transfieren todos los bytes esperados en una única llamada.
+
+#### Serialización del mensaje de apuesta
+
+El mensaje de apuesta se serializa como una cadena de texto donde los campos están separados por comas. El formato utilizado es el siguiente:
+
+```
+agencia,nombre,apellido,dni,nacimiento,numero
+```
+
+#### Serialización de la respuesta del servidor
+
+La respuesta del servidor ante la recepción de una apuesta también se envía como una cadena de texto. Puede tomar uno de los siguientes valores:
+
+- `"Apuesta almacenada"`: en caso de que el mensaje haya sido recibido y procesado correctamente.
+- `"Apuesta no almacenada"`: si ocurrió algún error durante el envío o procesamiento del mensaje.
+
+Esta respuesta permite al cliente validar si la apuesta fue registrada con éxito o si es necesario reintentar o informar un error.

@@ -47,8 +47,6 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
         while self.running:
             self._client_socket = self.__accept_new_connection()
             self.__handle_client_connection()
@@ -61,23 +59,22 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
             msg_str = read_message(self._client_socket)
             msg = msg_str.split(",")
-            store_bets([Bet(msg[5],msg[2], msg[3], msg[0], msg[4], msg[1])])
+            bet = Bet(msg[0], msg[1], msg[2], msg[3], msg[4], msg[5])
+            store_bets([bet])
             
-            bets= load_bets()
-            for bet in bets:
-                logging.info(f'action: load_bet | result: success | dni: {bet.document} | numero: {bet.number} | agencia: {bet.agency} | nombre: {bet.first_name} | apellido: {bet.last_name} | fecha_nacimiento: {bet.birthdate}')
-           
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {msg[0]} | numero: {msg[1]}')
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
             
-            msg_server = "Apuesta almacenada"
-            msg_server = f"{len(msg_server)}:{msg_server}"
-            logging.info(f'action: sending server message | result: success | msg_server: {msg_server} ')
-            send_message(self._client_socket, msg_server)
+            msg_server_success = "Apuesta almacenada"
+            logging.info(f'action: sending server message | result: success | msg_server: {msg_server_success} ')
+            send_message(self._client_socket, msg_server_success)
+            
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            msg_server_error = "Apuesta no almacenada"
+            logging.info(f'action: sending server message | result: fail | error: {e} | msg_server: {msg_server_error} ')
+            send_message(self._client_socket, msg_server_error)
+            
         finally:
             if self._client_socket:
                 self._client_socket.close()
