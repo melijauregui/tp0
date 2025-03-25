@@ -34,6 +34,9 @@ class Server:
             
         logging.info('action: graceful_shutdown | result: success | msg: server closed gracefully')
         sys.exit(0)
+        #SystemExit detiene el hilo principal completamente.
+
+
 
     def run(self):
         """
