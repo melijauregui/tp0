@@ -74,7 +74,7 @@ func (c *Client) StopClient() {
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
-			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err)
 		} else {
 			log.Infof("action: graceful_shutdown client connection | result: success | client_id: %v", c.config.ID)
 		}
@@ -185,9 +185,9 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 
 	err_closing := c.conn.Close()
 	if err_closing != nil {
-		log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
+		log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
 	}
-	log.Infof("action: connection closed | client_id: %v | result: success", c.config.ID)
+	log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
 	c.conn = nil
 
 }
