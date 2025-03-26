@@ -28,7 +28,6 @@ type Client struct {
 	config  ClientConfig
 	conn    net.Conn
 	Running bool
-	// fileReader *os.File
 }
 
 // NewClient Initializes a new client receiving the configuration
@@ -72,21 +71,12 @@ func (c *Client) StopClient() {
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
-			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err)
+			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v", c.config.ID, err)
 		} else {
 			log.Infof("action: graceful_shutdown client connection | result: success | client_id: %v", c.config.ID)
 		}
 		c.conn = nil
 	}
-	// if c.fileReader != nil {
-	// 	err := c.fileReader.Close()
-	// 	if err != nil {
-	// 		log.Errorf("action: closing file | result: fail | client_id: %v | error: %v", c.config.ID, err)
-	// 	} else {
-	// 		log.Infof("action: closing file | result: success | client_id: %v", c.config.ID)
-	// 	}
-	// 	c.fileReader = nil
-	// }
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
 }
@@ -94,7 +84,6 @@ func (c *Client) StopClient() {
 func (c *Client) SendBatchMessages() {
 	filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
 	readFile, err_opening_file := os.Open(filePath)
-	// c.fileReader = readFile
 	if err_opening_file != nil {
 		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err_opening_file)
 	}
