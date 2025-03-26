@@ -120,7 +120,9 @@ func main() {
 	finishChan := make(chan bool)
 	go HandleSignals(client, &wg, finishChan)
 	client.StartClientLoop()
-	finishChan <- true
+	if client.Running {
+		finishChan <- true
+	}
 	close(finishChan)
 	wg.Wait()
 }
@@ -136,6 +138,7 @@ func HandleSignals(c *common.Client, wg *sync.WaitGroup, finishChan chan bool) {
 	case <-finishChan:
 		log.Infof("action: signal | result: success | signal: finish")
 	case <-sigChannel:
+		log.Infof("action: signal | result: success | signal: SIGTERM")
 		//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
 		//bloquea la ejecución hasta que el canal reciba la señal sigterm.
 		c.StopClient()

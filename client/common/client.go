@@ -23,7 +23,7 @@ type ClientConfig struct {
 type Client struct {
 	config  ClientConfig
 	conn    net.Conn
-	running bool
+	Running bool
 }
 
 // NewClient Initializes a new client receiving the configuration
@@ -31,7 +31,7 @@ type Client struct {
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config:  config,
-		running: true,
+		Running: true,
 	}
 
 	return client
@@ -53,11 +53,11 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount && c.running; msgID++ {
+	for msgID := 1; msgID <= c.config.LoopAmount && c.Running; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		err_creating_client := c.createClientSocket()
 		if err_creating_client != nil {
-			if c.running {
+			if c.Running {
 				log.Errorf("action: create_client_socket | result: fail | client_id: %v | error: %v",
 					c.config.ID,
 					err_creating_client,
@@ -74,7 +74,7 @@ func (c *Client) StartClientLoop() {
 			msgID,
 		)
 		if err_sending != nil {
-			if c.running {
+			if c.Running {
 				log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
 					c.config.ID,
 					err_sending,
@@ -89,7 +89,7 @@ func (c *Client) StartClientLoop() {
 		msg, err_reading := bufio.NewReader(c.conn).ReadString('\n')
 
 		if err_reading != nil {
-			if c.running {
+			if c.Running {
 				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 					c.config.ID,
 					err_reading,
@@ -106,7 +106,7 @@ func (c *Client) StartClientLoop() {
 		err_closing := c.conn.Close()
 
 		if err_closing != nil {
-			if c.running {
+			if c.Running {
 				log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
 			}
 		}
@@ -123,7 +123,7 @@ func (c *Client) StartClientLoop() {
 }
 
 func (c *Client) StopClient() {
-	c.running = false
+	c.Running = false
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
