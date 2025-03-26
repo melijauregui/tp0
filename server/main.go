@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/server/common"
 	"github.com/op/go-logging"
@@ -88,6 +89,7 @@ func main() {
 	go HandleSignals(server)
 
 	server.Run()
+	time.Sleep(5 * time.Second)
 }
 
 func HandleSignals(s *common.Server) {
@@ -101,5 +103,4 @@ func HandleSignals(s *common.Server) {
 	//Bloquea la ejecución hasta que el canal reciba una señal.
 
 	s.GracefulShutdown()
-	os.Exit(0)
 }

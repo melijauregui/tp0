@@ -34,9 +34,11 @@ action: test_echo_server | result: fail
 
 
 ### Ejercicio N°4:
-Se modificó el servidor para que, al recibir la señal `SIGTERM`, cierre tanto la conexión actual con el cliente (`self._client_socket`) como el socket (`self._server_socket`) que utiliza para escuchar nuevas conexiones. Además, el handler de esta señal, luego de cerrar los recursos, finaliza el proceso utilizando `sys.exit(0)`. De esta forma, aunque el hilo principal se encuentre bloqueado en una llamada a `accept()`, el proceso termina de manera controlada. Esto se debe a que `sys.exit(0)` lanza una excepción `SystemExit`, que detiene el hilo principal sin mostrar errores ni tracebacks, ignorando cualquier excepción que pudiera haberse producido por el cierre del socket.
+En el servidor, se registró el método `graceful_shutdown` como handler para las señales `SIGTERM` y `SIGINT` mediante el módulo signal de Python. Este método, se encarga del cierre tanto la conexión actual con el cliente (`self._client_socket`) como el socket (`self._server_socket`) que utiliza para escuchar nuevas conexiones. Además, setea el valor del atributo `self._running` en False lo que permite que el hilo principal finalice su ejecución de forma controlada (graceful).
 
-En el caso del cliente, se implementó una goroutine que escucha la señal `SIGTERM`. Al recibirla, el cliente actualiza su atributo `running` a `false` el cual detiene el envío de mensajes y, si existe una conexión activa con el servidor (`c.conn`), la cierra. Esto permite que el cliente finalice su ejecución de forma graceful, liberando correctamente los recursos utilizados.
+En el caso del cliente, el handler de señales se ejecuta en una goroutine independiente y se encarga de escuchar la señal `SIGTERM` del sistema operativo. Para ello, utiliza un canal `sigChannel` junto con `signal.Notify`, lo que permite detectar si el proceso fue terminado de forma externa, ejecutando los métodos correspondientes para exitear cada cliente y servidor de forma graceful. 
+Al recibirla, el cliente actualiza su atributo `running` a `false` (igual que el servidor) el cual detiene el envío de mensajes y, si existe una conexión activa con el servidor (`c.conn`), la cierra.
+Además, se incorporó un canal `finishChan` que permite finalizar la goroutine encargada de manejar señales en caso de que el proceso finalice de forma normal, sin recibir una señal `SIGTERM`. De esta manera, si no se recibe dicha señal, se envía una notificación a través de `finishChan` que indica que la ejecución ha concluido, permitiendo cerrar correctamente la goroutine del handler y esperar su finalización mediante un `WaitGroup`. Esto asegura una terminación ordenada del programa y evita dejar goroutines colgadas.
 
 ## Parte 2: Repaso de Comunicaciones
 

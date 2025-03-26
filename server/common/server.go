@@ -3,9 +3,7 @@ package common
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/7574-sistemas-distribuidos/docker-compose-init/communication_protocol/common"
 	"github.com/op/go-logging"
@@ -49,7 +47,6 @@ func (s *Server) GracefulShutdown() {
 		log.Infof("action: graceful_shutdown | result: success | msg: server listener closed")
 	}
 	log.Infof("action: graceful_shutdown | result: success | msg: server closed gracefully")
-	os.Exit(0)
 }
 
 func (s *Server) Run() {
@@ -65,7 +62,6 @@ func (s *Server) Run() {
 		s.clientConn = conn
 		s.handleClientConnection()
 	}
-	time.Sleep(5 * time.Second)
 }
 
 // handleClientConnection processes the client connection by reading the message,
@@ -82,7 +78,9 @@ func (s *Server) handleClientConnection() {
 
 	msgStr, err_reading_msg := common.ReadMessage(s.clientConn)
 	if err_reading_msg != nil {
-		log.Infof("action: receive_message | result: fail | error: %v", err_reading_msg)
+		if s.running {
+			log.Infof("action: receive_message | result: fail | error: %v", err_reading_msg)
+		}
 		return
 	}
 
@@ -98,14 +96,24 @@ func (s *Server) handleClientConnection() {
 		}
 		newBet, err_creating_bet := NewBet(betInfo[0], betInfo[1], betInfo[2], betInfo[3], betInfo[4], betInfo[5])
 		if err_creating_bet != nil {
-			log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
-			error_in_bets = true
-			continue
+			if s.running {
+				log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
+				error_in_bets = true
+				continue
+			} else {
+				return
+			}
 		}
 		betList = append(betList, newBet)
 	}
 
-	StoreBets(betList)
+	err_store_bets := StoreBets(betList)
+	if err_store_bets != nil {
+		if s.running {
+			log.Errorf("action: store_bets | result: fail | error: %v", err_store_bets)
+		}
+		return
+	}
 	if error_in_bets {
 		log.Errorf("action: apuesta_recibida | result: fail | cantidad: %d", len(betList))
 	} else {

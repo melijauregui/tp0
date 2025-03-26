@@ -25,19 +25,19 @@ type ClientConfig struct {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config     ClientConfig
-	conn       net.Conn
-	running    bool
-	fileReader *os.File
+	config  ClientConfig
+	conn    net.Conn
+	Running bool
+	// fileReader *os.File
 }
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
-		config:     config,
-		running:    true,
-		fileReader: nil,
+		config:  config,
+		Running: true,
+		// fileReader: nil,
 	}
 
 	return client
@@ -47,15 +47,13 @@ func NewClient(config ClientConfig) *Client {
 // failure, error is printed in stdout/stderr and exit 1
 // is returned
 func (c *Client) createClientSocket() error {
-	conn, err := net.Dial("tcp", c.config.ServerAddress)
-	if err != nil {
-		log.Criticalf(
-			"action: connect | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
+	if c.Running {
+		conn, err := net.Dial("tcp", c.config.ServerAddress)
+		if err != nil {
+			return err
+		}
+		c.conn = conn
 	}
-	c.conn = conn
 	return nil
 }
 
@@ -63,14 +61,14 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	if c.running {
+	if c.Running {
 		c.SendBatchMessages()
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
 func (c *Client) StopClient() {
-	c.running = false
+	c.Running = false
 	if c.conn != nil {
 		err := c.conn.Close()
 		if err != nil {
@@ -80,25 +78,23 @@ func (c *Client) StopClient() {
 		}
 		c.conn = nil
 	}
-	if c.fileReader != nil {
-		err := c.fileReader.Close()
-		if err != nil {
-			log.Errorf("action: closing file | result: fail | client_id: %v | error: %v", c.config.ID, err)
-		} else {
-			log.Infof("action: closing file | result: success | client_id: %v", c.config.ID)
-		}
-		c.fileReader = nil
-	}
+	// if c.fileReader != nil {
+	// 	err := c.fileReader.Close()
+	// 	if err != nil {
+	// 		log.Errorf("action: closing file | result: fail | client_id: %v | error: %v", c.config.ID, err)
+	// 	} else {
+	// 		log.Infof("action: closing file | result: success | client_id: %v", c.config.ID)
+	// 	}
+	// 	c.fileReader = nil
+	// }
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
-	os.Exit(0)
-
 }
 
 func (c *Client) SendBatchMessages() {
 	filePath := fmt.Sprintf(".data/agency-%s.csv", c.config.ID)
 	readFile, err_opening_file := os.Open(filePath)
-	c.fileReader = readFile
+	// c.fileReader = readFile
 	if err_opening_file != nil {
 		log.Errorf("action: sending batch message | client_id: %v | result: fail | error : %v", c.config.ID, err_opening_file)
 	}
@@ -118,7 +114,7 @@ func (c *Client) SendBatchMessages() {
 	batchSize := 0
 	bet := []string{}
 
-	for fileScanner.Scan() {
+	for fileScanner.Scan() && c.Running {
 		fileLine := fileScanner.Text()
 		bet = strings.Split(fileLine, ",")
 		if len(bet) != 5 {
@@ -135,14 +131,12 @@ func (c *Client) SendBatchMessages() {
 			c.SendBatchMessage(bet, msg[0:len(msg)-1])
 			batchSize = 0
 			msg = ""
-			time.Sleep(c.config.LoopPeriod)
 		}
 	}
 
-	if len(msg) > 0 && c.running {
+	if len(msg) > 0 && c.Running {
 		c.SendBatchMessage(bet, msg[0:len(msg)-1])
 	}
-	time.Sleep(5 * time.Second)
 
 }
 
@@ -151,10 +145,12 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 	log.Infof("action: send_message_started | result: success | msg: %s", msg)
 	err_sending_msg := common.SendMessage(c.conn, msg)
 	if err_sending_msg != nil {
-		log.Errorf("action: send_message | result: fail | id: %s | error: %v",
-			c.config.ID,
-			err_sending_msg,
-		)
+		if c.Running {
+			log.Errorf("action: send_message | result: fail | id: %s | error: %v",
+				c.config.ID,
+				err_sending_msg,
+			)
+		}
 		return
 	}
 	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
@@ -164,10 +160,12 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 
 	receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
 	if err_reading_msg != nil {
-		log.Errorf("action: read_message | result: fail | id: %s | error: %v",
-			c.config.ID,
-			err_reading_msg,
-		)
+		if c.Running {
+			log.Errorf("action: read_message | result: fail | id: %s | error: %v",
+				c.config.ID,
+				err_reading_msg,
+			)
+		}
 		return
 	}
 
@@ -185,7 +183,9 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 
 	err_closing := c.conn.Close()
 	if err_closing != nil {
-		log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+		if c.Running {
+			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+		}
 	}
 	log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
 	c.conn = nil
