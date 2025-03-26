@@ -64,7 +64,7 @@ func (c *Client) StartClientLoop() {
 		c.SendBatchMessages()
 
 		intentos := 0
-		for intentos < c.config.LoopAmount {
+		for intentos < c.config.LoopAmount && c.Running {
 			err_wating_winners := c.WaitForWinners()
 			if err_wating_winners != nil {
 				log.Errorf("action: waiting_winners | result: fail | client_id: %v | error: %v", c.config.ID, err_wating_winners)
@@ -125,7 +125,11 @@ func (c *Client) SendBatchMessages() {
 		}
 		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", c.config.ID, bet[0], bet[1], bet[2], bet[3], bet[4])
 		if batchSize == 0 {
-			c.createClientSocket()
+			err_creating_socket := c.createClientSocket()
+			if err_creating_socket != nil {
+				log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err_creating_socket)
+				return
+			}
 			batchSize++
 		} else if batchSize < c.config.BatchMaxAmount-1 {
 			batchSize++
