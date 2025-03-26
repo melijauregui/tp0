@@ -30,10 +30,7 @@ class Server:
             logging.info('action: graceful_shutdown | result: success | msg: server socket closed')
             
         logging.info('action: graceful_shutdown | result: success | msg: server closed gracefully')
-        sys.exit(0)
         #SystemExit detiene el hilo principal completamente.
-
-
 
     def run(self):
         """
@@ -48,7 +45,8 @@ class Server:
         # the server
         while self.running:
             self._client_socket = self.__accept_new_connection()
-            self.__handle_client_connection()
+            if self._client_socket:
+                self.__handle_client_connection()
 
     def __handle_client_connection(self):
         """
@@ -79,9 +77,13 @@ class Server:
         Function blocks until a connection to a client is made.
         Then connection created is printed and returned
         """
-
-        # Connection arrived
-        logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        try:
+            # Connection arrived
+            logging.info('action: accept_connections | result: in_progress')
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            return c
+        except OSError as e:
+            if self.running:
+                logging.error(f'action: accept_connections | result: fail | error: {e}')
+            return None

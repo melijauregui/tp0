@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"os"
 	"time"
 
 	"github.com/op/go-logging"
@@ -44,11 +43,7 @@ func NewClient(config ClientConfig) *Client {
 func (c *Client) createClientSocket() error {
 	conn, err := net.Dial("tcp", c.config.ServerAddress)
 	if err != nil {
-		log.Criticalf(
-			"action: connect | result: fail | client_id: %v | error: %v",
-			c.config.ID,
-			err,
-		)
+		return err
 	}
 	c.conn = conn
 	return nil
@@ -60,32 +55,55 @@ func (c *Client) StartClientLoop() {
 	// Messages if the message amount threshold has not been surpassed
 	for msgID := 1; msgID <= c.config.LoopAmount && c.running; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
+		err_creating_client := c.createClientSocket()
+		if err_creating_client != nil {
+			if c.running {
+				log.Errorf("action: create_client_socket | result: fail | client_id: %v | error: %v",
+					c.config.ID,
+					err_creating_client,
+				)
+			}
+			return
+		}
 
 		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
+		_, err_sending := fmt.Fprintf(
 			c.conn,
 			"[CLIENT %v] Message N°%v\n",
 			c.config.ID,
 			msgID,
 		)
+		if err_sending != nil {
+			if c.running {
+				log.Errorf("action: send_message | result: fail | client_id: %v | error: %v",
+					c.config.ID,
+					err_sending,
+				)
+			}
+			return
+		}
 		log.Infof("action: send_message | result: success | client_id: %v | msg_id: %v",
 			c.config.ID,
 			msgID,
 		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		err_closing := c.conn.Close()
+		msg, err_reading := bufio.NewReader(c.conn).ReadString('\n')
 
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
+		if err_reading != nil {
+			if c.running {
+				log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+					c.config.ID,
+					err_reading,
+				)
+			}
 			return
 		}
 
+		err_closing := c.conn.Close()
+
 		if err_closing != nil {
-			log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err)
+			if c.running {
+				log.Errorf("action: connection closed | client_id: %v | signal: %v | result: fail | closed resource: %v", c.config.ID, err_closing)
+			}
 		}
 
 		c.conn = nil
@@ -115,6 +133,4 @@ func (c *Client) StopClient() {
 	}
 
 	log.Infof("action: graceful_shutdown | result: success | client_id: %v", c.config.ID)
-	os.Exit(0)
-
 }
