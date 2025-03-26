@@ -20,7 +20,7 @@ class Server:
         Signal handler to stop the server
         """
         self.running = False
-        if self._client_socket:
+        if self._client_socket is not None:
             self._client_socket.close()
             self._client_socket = None
             logging.info('action: graceful_shutdown | result: success | msg: client socket closed')
@@ -63,12 +63,12 @@ class Server:
             # TODO: Modify the send to avoid short-writes
             self._client_socket.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             if self._client_socket:
                 self._client_socket.close()
+                self._client_socket = None
                 logging.info('action: close_connection of client| result: success')
-                self.client_socket = None
 
     def __accept_new_connection(self):
         """

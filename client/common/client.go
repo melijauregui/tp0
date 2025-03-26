@@ -98,6 +98,11 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
+		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
+			c.config.ID,
+			msg,
+		)
+
 		err_closing := c.conn.Close()
 
 		if err_closing != nil {
@@ -108,10 +113,7 @@ func (c *Client) StartClientLoop() {
 
 		c.conn = nil
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
+		log.Infof("action: close_connection | result: success | client_id: %v", c.config.ID)
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
