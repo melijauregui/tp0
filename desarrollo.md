@@ -30,7 +30,7 @@ De lo contrario, imprime:
 
 
 ### Ejercicio N°4:
-Se modificó el servidor para que, al recibir la señal `SIGTERM`, cierre tanto la conexión actual con el cliente (`self._client_socket`) como el socket (`self._server_socket`) que utiliza para escuchar nuevas conexiones. Además, el handler de esta señal, setea el valor del atributo `self._running` en False lo que permite que el hilo principal finalice su ejecución de forma controlada (graceful).
+En el servidor, se registró el método `graceful_shutdown` como handler para las señales `SIGTERM` y `SIGINT` mediante el módulo signal de Python. Este método, se encarga del cierre tanto la conexión actual con el cliente (`self._client_socket`) como el socket (`self._server_socket`) que utiliza para escuchar nuevas conexiones. Además, setea el valor del atributo `self._running` en False lo que permite que el hilo principal finalice su ejecución de forma controlada (graceful).
 
 En el caso del cliente, el handler de señales se ejecuta en una goroutine independiente y se encarga de escuchar la señal `SIGTERM` del sistema operativo. Para ello, utiliza un canal `sigChannel` junto con `signal.Notify`, lo que permite detectar si el proceso fue terminado de forma externa, ejecutando los métodos correspondientes para exitear cada cliente y servidor de forma graceful. 
 
