@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -114,19 +115,29 @@ func main() {
 
 	client := common.NewClient(clientConfig)
 	//lanza un proceso en segundo plano que espera las signals y las maneja sin bloquear la ejecución del client.
-	go HandleSignals(client)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	finishChan := make(chan bool)
+	go HandleSignals(client, &wg, finishChan)
 	client.StartClientLoop()
+	finishChan <- true
+	close(finishChan)
+	wg.Wait()
 }
 
-func HandleSignals(c *common.Client) {
+func HandleSignals(c *common.Client, wg *sync.WaitGroup, finishChan chan bool) {
+	defer wg.Done()
 	sigChannel := make(chan os.Signal, 1) // espera las signals
 	//crea un canal (chan) en Go que puede recibir valores del tipo os.Signal
 	//el 1 en make(chan os.Signal, 1) significa que es un canal con buffer de tamaño 1
 	signal.Notify(sigChannel, syscall.SIGTERM)
 	//escuche la señal SIGTERM del sistema operativo.
-	//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
-	<-sigChannel
-	//bloquea la ejecución hasta que el canal reciba la señal sigterm.
-
-	c.StopClient()
+	select {
+	case <-finishChan:
+		log.Infof("action: signal | result: success | signal: finish")
+	case <-sigChannel:
+		//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
+		//bloquea la ejecución hasta que el canal reciba la señal sigterm.
+		c.StopClient()
+	}
 }
