@@ -129,5 +129,4 @@ func HandleSignals(c *common.Client) {
 	//bloquea la ejecución hasta que el canal reciba la señal sigterm.
 
 	c.StopClient()
-	os.Exit(0)
 }
