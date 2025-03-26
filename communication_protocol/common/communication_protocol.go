@@ -10,6 +10,9 @@ import (
 
 // mensaje con formato `<longitud>:<msg>` y recibe respuesta
 func SendMessage(conn net.Conn, msg string) error {
+	if conn == nil {
+		return fmt.Errorf("connection is nil")
+	}
 	msgSend := fmt.Sprintf("%d:%s", len(msg), msg)
 	//enviar mensaje
 	n_write, err := fmt.Fprint(conn, msgSend)
@@ -31,6 +34,9 @@ func SendMessage(conn net.Conn, msg string) error {
 
 // mensaje con formato `<longitud>:<msg>`
 func ReadMessage(conn net.Conn) (string, error) {
+	if conn == nil {
+		return "", fmt.Errorf("connection is nil")
+	}
 	reader := bufio.NewReader(conn)
 	totalBytesStr, err := reader.ReadString(':')
 	if err != nil {
