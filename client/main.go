@@ -131,6 +131,7 @@ func main() {
 	//lanza un proceso en segundo plano que espera las signals y las maneja sin bloquear la ejecución del client.
 	go HandleSignals(client)
 	client.StartClientLoop()
+	time.Sleep(5 * time.Second)
 }
 
 func HandleSignals(c *common.Client) {
@@ -144,5 +145,4 @@ func HandleSignals(c *common.Client) {
 	//Bloquea la ejecución hasta que el canal reciba una señal.
 
 	c.StopClient()
-	os.Exit(0)
 }

@@ -23,7 +23,7 @@ class Server:
         Signal handler to stop the server
         """
         self.running = False
-        if self._client_socket:
+        if self._client_socket is not None:
             self._client_socket.close()
             self._client_socket = None
             logging.info('action: graceful_shutdown | result: success | msg: client socket closed')
@@ -33,10 +33,6 @@ class Server:
             logging.info('action: graceful_shutdown | result: success | msg: server socket closed')
             
         logging.info('action: graceful_shutdown | result: success | msg: server closed gracefully')
-        sys.exit(0)
-        #SystemExit detiene el hilo principal completamente.
-
-
 
     def run(self):
         """
@@ -49,7 +45,8 @@ class Server:
 
         while self.running:
             self._client_socket = self.__accept_new_connection()
-            self.__handle_client_connection()
+            if self._client_socket:
+                self.__handle_client_connection()
 
     def __handle_client_connection(self):
         """
@@ -71,15 +68,16 @@ class Server:
             send_message(self._client_socket, msg_server_success)
             
         except OSError as e:
-            msg_server_error = "Apuesta no almacenada"
-            logging.info(f'action: sending server message | result: fail | error: {e} | msg_server: {msg_server_error} ')
-            send_message(self._client_socket, msg_server_error)
-            
+            if self.running:
+                msg_server_error = "Apuesta no almacenada"
+                logging.info(f'action: sending server message | result: fail | error: {e} | msg_server: {msg_server_error} ')
+                send_message(self._client_socket, msg_server_error)
+                logging.error(f"action: receive_message | result: fail | error: {e}")
         finally:
             if self._client_socket:
                 self._client_socket.close()
+                self._client_socket = None
                 logging.info('action: close_connection of client| result: success')
-                self.client_socket = None
 
     def __accept_new_connection(self):
         """
@@ -88,9 +86,13 @@ class Server:
         Function blocks until a connection to a client is made.
         Then connection created is printed and returned
         """
-
-        # Connection arrived
-        logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
-        logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+        try:
+            # Connection arrived
+            logging.info('action: accept_connections | result: in_progress')
+            c, addr = self._server_socket.accept()
+            logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
+            return c
+        except OSError as e:
+            if self.running:
+                logging.error(f'action: accept_connections | result: fail | error: {e}')
+            return None
