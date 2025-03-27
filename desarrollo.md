@@ -93,3 +93,16 @@ Por cada batch enviado, el servidor responde con un mensaje `{cantidad} apuestas
 + `action: apuesta_enviada | result: success`, si la cantidad almacenada coincide con la cantidad enviada.
 
 + `action: apuesta_enviada | result: fail`, si hubo algún error en el almacenamiento de alguna apuesta.
+
+
+### Ejercicio N°7:
+Para este ejercicio, cada cliente envía su batch de apuestas de la misma manera que en el ejercicio 6. La diferencia principal es que, una vez finalizado el envío de todas sus apuestas, el cliente envía al servidor el mensaje `"Winners, please?"`, indicando que ha concluido su participación.
+
+El servidor puede responder de dos maneras:
+
++ `"No winners yet"`: si aún el servidor no ha determinado a los ganadores, es decir, si todavía hay agencias que no han finalizado el envío de sus apuestas.
++ `"ganador1;ganador2;...;ganador_n"`: una cadena que representa la lista de documentos de las apuestas ganadoras correspondientes a esa agencia.
+
+Del lado del servidor, se mantiene un map que registra las agencias que han finalizado el envío de apuestas. Cuando el servidor recibe el mensaje `"Winners, please?"` por parte de una agencia, la agrega al map (indicando que ya finalizo su envio de apuestas). Una vez que todas las agencias han sido registradas como finalizadas, el servidor procede a procesar los ganadores del sorteo. El resultado se almacena en el mismo map, donde la clave es el ID de la agencia y el valor es el mensaje con los documentos ganadores correspondiente a esa agencia (`"ganador1;ganador2;...;ganador_n"`).
+
+Por último, si el cliente recibe como respuesta `"No winners yet`", se le penaliza con un segundo adicional de espera antes de volver a consultar, incrementando progresivamente el tiempo entre cada solicitud de resultados hasta que estos estén disponibles.
