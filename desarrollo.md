@@ -121,3 +121,9 @@ Esto requirió realizar una serie de cambios en la estructura Server para asegur
 + Se creó el mutex `s.lockWinnerRevealed` para sincronizar el acceso a la estructura `agenciesWaiting`, que guarda el conjunto de agencias que finalizaron el envío de apuestas. Este lock se utiliza tanto al registrar nuevas agencias (cuando el servidor recibe un mensaje `"Winners, please?"`) como al consultar cuántas agencias están en espera, evitando así interferencias entre el hilo principal y las goroutines que manejan las conexiones.
 + Finalmente, cada goroutine creada a través del `handleClientConnection` se registra en un `WaitGroup`, que es utilizado por el hilo principal para esperar a que todas las conexiones activas finalicen antes de completar el shutdown, garantizando así una finalización ordenada del servidor.
 
+## Diagramas protocolo de comunicación
+
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
