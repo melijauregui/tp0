@@ -101,11 +101,10 @@ func (c *Client) SendBatchMessages() {
 
 	msg := ""
 	batchSize := 0
-	bet := []string{}
 
 	for fileScanner.Scan() && c.Running {
 		fileLine := fileScanner.Text()
-		bet = strings.Split(fileLine, ",")
+		bet := strings.Split(fileLine, ",")
 		if len(bet) != 5 {
 			log.Errorf("action: sending batch message | result: fail | client_id: %v | error: invalid bet format", c.config.ID)
 			continue
@@ -123,19 +122,19 @@ func (c *Client) SendBatchMessages() {
 		} else if batchSize < c.config.BatchMaxAmount-1 {
 			batchSize++
 		} else {
-			c.SendBatchMessage(bet, msg[0:len(msg)-1])
+			c.SendBatchMessage(msg[0 : len(msg)-1])
 			batchSize = 0
 			msg = ""
 		}
 	}
 
 	if len(msg) > 0 && c.Running {
-		c.SendBatchMessage(bet, msg[0:len(msg)-1])
+		c.SendBatchMessage(msg[0 : len(msg)-1])
 	}
 
 }
 
-func (c *Client) SendBatchMessage(bet []string, msg string) {
+func (c *Client) SendBatchMessage(msg string) {
 
 	log.Infof("action: send_message_started | result: success | msg: %s", msg)
 	err_sending_msg := common.SendMessage(c.conn, msg)
@@ -148,9 +147,8 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 		}
 		return
 	}
-	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
+	log.Infof("action: apuesta_enviada | result: success | id: %s",
 		c.config.ID,
-		bet[2],
 	)
 
 	receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
