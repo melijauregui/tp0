@@ -103,6 +103,21 @@ El servidor puede responder de dos maneras:
 + `"No winners yet"`: si aún el servidor no ha determinado a los ganadores, es decir, si todavía hay agencias que no han finalizado el envío de sus apuestas.
 + `"ganador1;ganador2;...;ganador_n"`: una cadena que representa la lista de documentos de las apuestas ganadoras correspondientes a esa agencia.
 
-Del lado del servidor, se mantiene un map que registra las agencias que han finalizado el envío de apuestas. Cuando el servidor recibe el mensaje `"Winners, please?"` por parte de una agencia, la agrega al map (indicando que ya finalizo su envio de apuestas). Una vez que todas las agencias han sido registradas como finalizadas, el servidor procede a procesar los ganadores del sorteo. El resultado se almacena en el mismo map, donde la clave es el ID de la agencia y el valor es el mensaje con los documentos ganadores correspondiente a esa agencia (`"ganador1;ganador2;...;ganador_n"`).
+Del lado del servidor, se mantiene un map (`agenciesWaiting`) que registra las agencias que han finalizado el envío de apuestas. Cuando el servidor recibe el mensaje `"Winners, please?"` por parte de una agencia, la agrega al map (indicando que ya finalizo su envio de apuestas). Una vez que todas las agencias han sido registradas como finalizadas, el servidor procede a procesar los ganadores del sorteo. El resultado se almacena en el mismo map, donde la clave es el ID de la agencia y el valor es el mensaje con los documentos ganadores correspondiente a esa agencia (`"ganador1;ganador2;...;ganador_n"`).
 
 Por último, si el cliente recibe como respuesta `"No winners yet`", se le penaliza con un segundo adicional de espera antes de volver a consultar, incrementando progresivamente el tiempo entre cada solicitud de resultados hasta que estos estén disponibles.
+
+## Parte 3: Repaso de Concurrencia
+### Ejercicio N°8:
+
+Para implementar la concurrencia en el servidor, se modificó la ejecución del método `handleClientConnection` para que se ejecute dentro de una goroutine, permitiendo atender múltiples clientes en paralelo mientras el servidor continúa aceptando nuevas conexiones.
+
+Esto requirió realizar una serie de cambios en la estructura Server para asegurar el manejo correcto de múltiples conexiones y garantizar una finalización ordenada en caso de shutdown, todo de manera thread-safe. Las principales modificaciones fueron:
+
++ Se reemplazó el campo `s.clientCon`, que almacenaba una única conexión, por un map` s.clientsConn` que permite registrar múltiples conexiones activas. Para garantizar acceso seguro desde múltiples goroutines, se incorporó un mutex asociado a este map (`s.lockClientsConn`).
++ Se protegió el acceso al atributo `s.running` mediante un mutex, permitiendo leer y modificar su valor de manera thread-safe desde diferentes partes del código.
++ Se adaptó el método `GracefulShutdown()` del servidor para cerrar todas las conexiones activas almacenadas en `s.clientsConn` y establecer `s.running = false`, utilizando los mutex correspondientes para evitar condiciones de carrera.
++ Se introdujo el mutex `s.betsLock` para proteger las operaciones de lectura y escritura sobre las estructuras de datos que almacenan las apuestas, ya que estas operaciones no son seguras por defecto en contextos concurrentes.
++ Se creó el mutex `s.lockWinnerRevealed` para sincronizar el acceso a la estructura `agenciesWaiting`, que guarda el conjunto de agencias que finalizaron el envío de apuestas. Este lock se utiliza tanto al registrar nuevas agencias (cuando el servidor recibe un mensaje `"Winners, please?"`) como al consultar cuántas agencias están en espera, evitando así interferencias entre el hilo principal y las goroutines que manejan las conexiones.
++ Finalmente, cada goroutine creada a través del `handleClientConnection` se registra en un `WaitGroup`, que es utilizado por el hilo principal para esperar a que todas las conexiones activas finalicen antes de completar el shutdown, garantizando así una finalización ordenada del servidor.
+
