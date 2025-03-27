@@ -128,6 +128,7 @@ func main() {
 	}
 	close(finishChan)
 	wg.Wait()
+	log.Infof("action: client_finished | result: success | client_id: %s", v.GetString("id"))
 	time.Sleep(5 * time.Second)
 }
 

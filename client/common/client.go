@@ -125,9 +125,11 @@ func (c *Client) SendBatchMessages() {
 		}
 		msg += fmt.Sprintf("%s,%s,%s,%s,%s,%s;", c.config.ID, bet[0], bet[1], bet[2], bet[3], bet[4])
 		if batchSize == 0 {
-			err_creating_socket := c.createClientSocket()
-			if err_creating_socket != nil {
-				log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err_creating_socket)
+			err_creating_client := c.createClientSocket()
+			if err_creating_client != nil {
+				if c.Running {
+					log.Errorf("action: sending batch message | result: fail | client_id: %v | error: %v", c.config.ID, err_creating_client)
+				}
 				return
 			}
 			batchSize++

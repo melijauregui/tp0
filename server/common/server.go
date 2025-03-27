@@ -172,11 +172,9 @@ func (s *Server) handleAgencyWaitingMessage(msgStr string) {
 		log.Infof("action: waiting agency | result: success | agency: %d", agency)
 	}
 
-	log.Infof("action: send msg to waiting agency | result: success | msg: %s", msg)
-
 	err_sending_msg := common.SendMessage(s.clientConn, msg)
 	if err_sending_msg != nil {
-		log.Errorf("action: send client message | result: fail | error: %v", err_sending_msg)
+		log.Errorf("action: send client message | result: fail | error: %v | msg_server:", err_sending_msg, msg)
 	} else {
 		log.Infof("action: send client message | result: success | msg_server: %s", msg)
 	}
