@@ -114,11 +114,10 @@ func (c *Client) SendBatchMessages() {
 
 	msg := ""
 	batchSize := 0
-	bet := []string{}
 
 	for fileScanner.Scan() && c.Running {
 		fileLine := fileScanner.Text()
-		bet = strings.Split(fileLine, ",")
+		bet := strings.Split(fileLine, ",")
 		if len(bet) != 5 {
 			log.Errorf("action: sending batch message | result: fail | client_id: %v | error: invalid bet format", c.config.ID)
 			continue
@@ -136,19 +135,19 @@ func (c *Client) SendBatchMessages() {
 		} else if batchSize < c.config.BatchMaxAmount-1 {
 			batchSize++
 		} else {
-			c.SendBatchMessage(bet, msg[0:len(msg)-1])
+			c.SendBatchMessage(msg[0 : len(msg)-1])
 			batchSize = 0
 			msg = ""
 		}
 	}
 
 	if len(msg) > 0 && c.Running {
-		c.SendBatchMessage(bet, msg[0:len(msg)-1])
+		c.SendBatchMessage(msg[0 : len(msg)-1])
 	}
 
 }
 
-func (c *Client) SendBatchMessage(bet []string, msg string) {
+func (c *Client) SendBatchMessage(msg string) {
 
 	log.Infof("action: send_message_started | result: success | msg: %s", msg)
 	err_sending_msg := common.SendMessage(c.conn, msg)
@@ -188,15 +187,16 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 		)
 	}
 
-	err_closing := c.conn.Close()
-	if err_closing != nil {
-		if c.Running {
-			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+	if c.conn != nil {
+		err_closing := c.conn.Close()
+		if err_closing != nil {
+			if c.Running {
+				log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+			}
 		}
+		log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
+		c.conn = nil
 	}
-	log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
-	c.conn = nil
-
 }
 
 func (c *Client) WaitForWinners() error {
@@ -206,7 +206,6 @@ func (c *Client) WaitForWinners() error {
 	for !knowsWinners && c.Running {
 		err_creating_socket := c.createClientSocket()
 		if err_creating_socket != nil {
-			log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err_creating_socket)
 			return err_creating_socket
 		}
 		log.Infof("action: create_socket | result: success | client_id: %v", c.config.ID)
@@ -215,6 +214,11 @@ func (c *Client) WaitForWinners() error {
 		if err_sending_msg != nil {
 			return err_sending_msg
 		}
+
+		log.Infof("action: send_message | result: success | id: %s | message: %s",
+			c.config.ID,
+			msg,
+		)
 
 		receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
 		if err_reading_msg != nil {
@@ -244,15 +248,15 @@ func (c *Client) WaitForWinners() error {
 				c.config.ID,
 			)
 		}
-		err_closing := c.conn.Close()
-		if err_closing != nil {
-			if c.Running {
+		if c.conn != nil {
+			err_closing := c.conn.Close()
+			if err_closing != nil && c.Running {
 				log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
 			}
+			log.Infof("action: connection closed | result: success | client_id: %v", c.config.ID)
+			c.conn = nil
 		}
-		log.Infof("action: connection closed | result: success | client_id: %v", c.config.ID)
-		c.conn = nil
-		if !knowsWinners {
+		if !knowsWinners && c.Running {
 			log.Infof("action: waiting_winners sleep | result: in_progress | client_id: %v", c.config.ID)
 			i++
 			time.Sleep(time.Duration(i) * time.Second)
