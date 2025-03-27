@@ -73,8 +73,6 @@ func (c *Client) StartClientLoop() {
 				break
 			}
 		}
-		time.Sleep(5 * time.Second)
-
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
@@ -210,6 +208,7 @@ func (c *Client) WaitForWinners() error {
 			log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err_creating_socket)
 			return err_creating_socket
 		}
+		log.Infof("action: create_socket | result: success | client_id: %v", c.config.ID)
 		msg := fmt.Sprintf("%s,%s;", c.config.ID, "Winners, please?")
 		err_sending_msg := common.SendMessage(c.conn, msg)
 		if err_sending_msg != nil {
@@ -259,6 +258,7 @@ func (c *Client) WaitForWinners() error {
 		log.Infof("action: connection closed | result: success | client_id: %v", c.config.ID)
 		c.conn = nil
 		if !knowsWinners {
+			log.Infof("action: waiting_winners sleep | result: in_progress | client_id: %v", c.config.ID)
 			i++
 			time.Sleep(time.Duration(i) * time.Second)
 		}
