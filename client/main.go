@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/op/go-logging"
@@ -33,6 +36,7 @@ func InitConfig() (*viper.Viper, error) {
 
 	// Add env variables supported
 	v.BindEnv("id")
+	v.BindEnv("batch", "maxAmount")
 	v.BindEnv("server", "address")
 	v.BindEnv("loop", "period")
 	v.BindEnv("loop", "amount")
@@ -81,12 +85,13 @@ func InitLogger(logLevel string) error {
 // PrintConfig Print all the configuration parameters of the program.
 // For debugging purposes only
 func PrintConfig(v *viper.Viper) {
-	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s",
+	log.Infof("action: config | result: success | client_id: %s | server_address: %s | loop_amount: %v | loop_period: %v | log_level: %s | batch_maxAmount: %v",
 		v.GetString("id"),
 		v.GetString("server.address"),
 		v.GetInt("loop.amount"),
 		v.GetDuration("loop.period"),
 		v.GetString("log.level"),
+		getMaxAmount(v),
 	)
 }
 
@@ -104,12 +109,51 @@ func main() {
 	PrintConfig(v)
 
 	clientConfig := common.ClientConfig{
-		ServerAddress: v.GetString("server.address"),
-		ID:            v.GetString("id"),
-		LoopAmount:    v.GetInt("loop.amount"),
-		LoopPeriod:    v.GetDuration("loop.period"),
+		ServerAddress:  v.GetString("server.address"),
+		ID:             v.GetString("id"),
+		LoopAmount:     v.GetInt("loop.amount"),
+		LoopPeriod:     v.GetDuration("loop.period"),
+		BatchMaxAmount: getMaxAmount(v),
 	}
 
 	client := common.NewClient(clientConfig)
+	//lanza un proceso en segundo plano que espera las signals y las maneja sin bloquear la ejecución del client.
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	finishChan := make(chan bool)
+	go HandleSignals(client, &wg, finishChan)
 	client.StartClientLoop()
+	if client.Running {
+		finishChan <- true
+	}
+	close(finishChan)
+	wg.Wait()
+	log.Infof("action: client_finished | result: success | client_id: %s", v.GetString("id"))
+	time.Sleep(500 * time.Millisecond)
+}
+
+func HandleSignals(c *common.Client, wg *sync.WaitGroup, finishChan chan bool) {
+	defer wg.Done()
+	sigChannel := make(chan os.Signal, 1) // espera las signals
+	//crea un canal (chan) en Go que puede recibir valores del tipo os.Signal
+	//el 1 en make(chan os.Signal, 1) significa que es un canal con buffer de tamaño 1
+	signal.Notify(sigChannel, syscall.SIGTERM)
+	//escuche la señal SIGTERM del sistema operativo.
+	select {
+	case <-finishChan:
+		log.Infof("action: signal | result: success | signal: finish")
+	case <-sigChannel:
+		log.Infof("action: signal | result: success | signal: SIGTERM")
+		//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
+		//bloquea la ejecución hasta que el canal reciba la señal sigterm.
+		c.StopClient()
+	}
+}
+
+func getMaxAmount(v *viper.Viper) int {
+	value := v.GetInt("batch.maxAmount")
+	if value < 0 || value > 100 {
+		return 100
+	}
+	return value
 }
