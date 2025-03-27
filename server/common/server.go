@@ -15,8 +15,9 @@ var log = logging.MustGetLogger("log")
 
 type Server struct {
 	listener           net.Listener
-	running            bool
 	numberOfAgencies   int
+	running            bool
+	runningLock        sync.Mutex
 	clientsConn        map[string]net.Conn
 	lockClientsConn    sync.Mutex
 	agenciesWaiting    map[int]string
@@ -49,10 +50,10 @@ func NewServer(config ServerConfig) (*Server, error) {
 }
 
 func (s *Server) Run() {
-	for s.running {
+	for s.isRunning() {
 		conn, ip, err := s.acceptNewConnection()
 		if err != nil {
-			if !s.running {
+			if !s.isRunning() {
 				log.Infof("action: accepted connection fail for quitting | result: success")
 				return
 			}
@@ -87,7 +88,7 @@ func (s *Server) handleClientConnection(clientConn net.Conn, ip string) {
 
 	msgStr, err_reading_msg := common.ReadMessage(clientConn)
 	if err_reading_msg != nil {
-		if s.running {
+		if s.isRunning() {
 			log.Infof("action: receive_message | result: fail | error: %v", err_reading_msg)
 		}
 		return
@@ -112,7 +113,7 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 		}
 		newBet, err_creating_bet := NewBet(betInfo[0], betInfo[1], betInfo[2], betInfo[3], betInfo[4], betInfo[5])
 		if err_creating_bet != nil {
-			if s.running {
+			if s.isRunning() {
 				log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
 				error_in_bets = true
 				continue
@@ -126,7 +127,7 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 	err_store_bets := StoreBets(betList)
 	s.betsLock.Unlock()
 	if err_store_bets != nil {
-		if s.running {
+		if s.isRunning() {
 			log.Errorf("action: store_bets | result: fail | error: %v", err_store_bets)
 		}
 		return
@@ -141,7 +142,9 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 	msgServer := fmt.Sprintf("%d apuestas almacenadas", len(betList))
 	err_sending_msg := common.SendMessage(clientConn, msgServer)
 	if err_sending_msg != nil {
-		log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
+		if s.isRunning() {
+			log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
+		}
 	} else {
 		log.Infof("action: sending server message | result: success | msg_server: %s", msgServer)
 	}
@@ -172,7 +175,9 @@ func (s *Server) handleAgencyWaitingMessage(clientConn net.Conn, msgStr string) 
 
 	err_sending_msg := common.SendMessage(clientConn, msg)
 	if err_sending_msg != nil {
-		log.Errorf("action: send client message | result: fail | error: %v | msg_server:", err_sending_msg, msg)
+		if s.isRunning() {
+			log.Errorf("action: send client message | result: fail | error: %v | msg_server:", err_sending_msg, msg)
+		}
 	} else {
 		log.Infof("action: send client message | result: success | msg_server: %s", msg)
 	}
@@ -187,12 +192,14 @@ func (s *Server) canRevealWinners() {
 		bets, err_loading_bets := LoadBets()
 		s.betsLock.Unlock()
 		if err_loading_bets != nil {
-			log.Errorf("action: load_bets | result: fail | error: %v", err_loading_bets)
+			if s.isRunning() {
+				log.Errorf("action: load_bets | result: fail | error: %v", err_loading_bets)
+			}
 			return
 		}
 
 		for _, bet := range bets {
-			if !s.running {
+			if !s.isRunning() {
 				break
 			}
 			if HasWon(bet) {
@@ -219,14 +226,16 @@ func (s *Server) acceptNewConnection() (net.Conn, string, error) {
 // gracefulShutdown handles shutdown signals by closing the client connection
 // (if any) and the server listener, then exiting.
 func (s *Server) GracefulShutdown() {
+	s.runningLock.Lock()
 	s.running = false
+	s.runningLock.Unlock()
 	log.Infof("action: graceful_shutdown | result: in_progress")
 
 	s.lockClientsConn.Lock()
 	for ip, conn := range s.clientsConn {
 		conn.Close()
 		s.clientsConn[ip] = nil
-		log.Infof("action: close_connection of client | result: success | ip: %d", ip)
+		log.Infof("action: close_connection of client | result: success | ip: %v", ip)
 	}
 	s.lockClientsConn.Unlock()
 
@@ -236,4 +245,11 @@ func (s *Server) GracefulShutdown() {
 		log.Infof("action: listener.Close() finished | error: %v", err)
 	}
 	log.Infof("action: graceful_shutdown | result: success | msg: server closed gracefully")
+}
+
+func (s *Server) isRunning() bool {
+	s.runningLock.Lock()
+	running := s.running
+	defer s.runningLock.Unlock()
+	return running
 }

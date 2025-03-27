@@ -67,8 +67,10 @@ func (c *Client) StartClientLoop() {
 		for intentos < c.config.LoopAmount && c.Running {
 			err_wating_winners := c.WaitForWinners()
 			if err_wating_winners != nil {
-				log.Errorf("action: waiting_winners | result: fail | client_id: %v | error: %v", c.config.ID, err_wating_winners)
-				intentos++
+				if c.Running {
+					log.Errorf("action: waiting_winners | result: fail | client_id: %v | error: %v", c.config.ID, err_wating_winners)
+					intentos++
+				}
 			} else {
 				break
 			}
@@ -211,19 +213,11 @@ func (c *Client) WaitForWinners() error {
 		msg := fmt.Sprintf("%s,%s;", c.config.ID, "Winners, please?")
 		err_sending_msg := common.SendMessage(c.conn, msg)
 		if err_sending_msg != nil {
-			log.Errorf("action: send_message | result: fail | id: %s | error: %v",
-				c.config.ID,
-				err_sending_msg,
-			)
 			return err_sending_msg
 		}
 
 		receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
 		if err_reading_msg != nil {
-			log.Errorf("action: read_message | result: fail | id: %s | error: %v",
-				c.config.ID,
-				err_reading_msg,
-			)
 			return err_reading_msg
 		}
 
@@ -252,7 +246,9 @@ func (c *Client) WaitForWinners() error {
 		}
 		err_closing := c.conn.Close()
 		if err_closing != nil {
-			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+			if c.Running {
+				log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+			}
 		}
 		log.Infof("action: connection closed | result: success | client_id: %v", c.config.ID)
 		c.conn = nil
