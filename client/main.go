@@ -128,7 +128,7 @@ func main() {
 	}
 	close(finishChan)
 	wg.Wait()
-	time.Sleep(5 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 }
 
 func HandleSignals(c *common.Client, wg *sync.WaitGroup, finishChan chan bool) {

@@ -89,7 +89,7 @@ func main() {
 	go HandleSignals(server)
 
 	server.Run()
-	time.Sleep(5 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 }
 
 func HandleSignals(s *common.Server) {
