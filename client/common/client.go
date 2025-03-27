@@ -159,9 +159,8 @@ func (c *Client) SendBatchMessage(bet []string, msg string) {
 		}
 		return
 	}
-	log.Infof("action: apuesta_enviada | result: success | id: %s | dni: %s",
+	log.Infof("action: apuesta_enviada | result: success | id: %s",
 		c.config.ID,
-		bet[2],
 	)
 
 	receivedMessage, err_reading_msg := common.ReadMessage(c.conn)
