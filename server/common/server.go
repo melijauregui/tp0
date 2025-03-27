@@ -132,7 +132,6 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 		return
 	}
 
-	log.Infof("action: apuesta_recibida | result: success | cantidad: %d", len(betList))
 	if error_in_bets {
 		log.Errorf("action: apuesta_recibida | result: fail | cantidad: %d", len(betList))
 	} else {
