@@ -93,8 +93,7 @@ func main() {
 	go HandleSignals(server)
 
 	server.Run()
-	time.Sleep(1 * time.Second)
-
+	time.Sleep(500 * time.Millisecond)
 }
 
 func HandleSignals(s *common.Server) {
@@ -108,5 +107,4 @@ func HandleSignals(s *common.Server) {
 	<-sigChannel
 	//Bloquea la ejecución hasta que el canal reciba una señal.
 	s.GracefulShutdown()
-	os.Exit(0)
 }

@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -88,7 +87,9 @@ func (s *Server) handleClientConnection(clientConn net.Conn, ip string) {
 
 	msgStr, err_reading_msg := common.ReadMessage(clientConn)
 	if err_reading_msg != nil {
-		log.Infof("action: receive_message | result: fail | error: %v", err_reading_msg)
+		if s.running {
+			log.Infof("action: receive_message | result: fail | error: %v", err_reading_msg)
+		}
 		return
 	}
 
@@ -101,26 +102,44 @@ func (s *Server) handleClientConnection(clientConn net.Conn, ip string) {
 
 func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 	var betList []Bet
+	error_in_bets := false
 	betsSplit := strings.Split(msgStr, ";")
 	for _, bet := range betsSplit {
 		betInfo := strings.Split(bet, ",")
 		if len(betInfo) < 6 {
-			// skip invalid bets.
+			error_in_bets = true
 			continue
 		}
 		newBet, err_creating_bet := NewBet(betInfo[0], betInfo[1], betInfo[2], betInfo[3], betInfo[4], betInfo[5])
 		if err_creating_bet != nil {
-			log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
-			continue
+			if s.running {
+				log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
+				error_in_bets = true
+				continue
+			} else {
+				return
+			}
 		}
 		betList = append(betList, newBet)
 	}
 	s.betsLock.Lock()
-	StoreBets(betList)
+	err_store_bets := StoreBets(betList)
 	s.betsLock.Unlock()
-	log.Infof("action: apuesta_recibida | result: success | cantidad: %d", len(betList))
+	if err_store_bets != nil {
+		if s.running {
+			log.Errorf("action: store_bets | result: fail | error: %v", err_store_bets)
+		}
+		return
+	}
 
-	msgServer := "Apuesta almacenada"
+	log.Infof("action: apuesta_recibida | result: success | cantidad: %d", len(betList))
+	if error_in_bets {
+		log.Errorf("action: apuesta_recibida | result: fail | cantidad: %d", len(betList))
+	} else {
+		log.Infof("action: apuesta_recibida | result: success | cantidad: %d", len(betList))
+	}
+
+	msgServer := fmt.Sprintf("%d apuestas almacenadas", len(betList))
 	err_sending_msg := common.SendMessage(clientConn, msgServer)
 	if err_sending_msg != nil {
 		log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
@@ -152,11 +171,11 @@ func (s *Server) handleAgencyWaitingMessage(clientConn net.Conn, msgStr string) 
 	}
 	s.lockWinnerRevealed.Unlock()
 
-	log.Infof("action: send msg to waiting agency | result: success | msg: %s", msg)
-
 	err_sending_msg := common.SendMessage(clientConn, msg)
 	if err_sending_msg != nil {
-		log.Errorf("action: send client message | result: fail | error: %v", err_sending_msg)
+		log.Errorf("action: send client message | result: fail | error: %v | msg_server:", err_sending_msg, msg)
+	} else {
+		log.Infof("action: send client message | result: success | msg_server: %s", msg)
 	}
 
 }
@@ -218,5 +237,4 @@ func (s *Server) GracefulShutdown() {
 		log.Infof("action: listener.Close() finished | error: %v", err)
 	}
 	log.Infof("action: graceful_shutdown | result: success | msg: server closed gracefully")
-	os.Exit(0)
 }
