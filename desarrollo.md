@@ -86,8 +86,6 @@ El cliente procesa el archivo `client_{id}.csv` leyendo línea por línea y conc
 
 Para definir el valor por defecto de la cantidad de apuestas por batch (`batch.maxAmount`), se asumió que cada línea del CSV ocupa como máximo 80 caracteres. Esta estimación se basa en los ejemplos provistos, donde incluso las líneas más largas no superan dicha longitud. Dado que el tamaño máximo de un mensaje es de 8 KB, se estableció un valor por defecto de 100 apuestas por batch, ya que este límite garantiza que el mensaje no supere el tamaño permitido.
 
-Además, se incorporó un nuevo atributo `fileReader` al cliente para mantener una referencia al archivo abierto, lo que permite cerrarlo adecuadamente al momento de realizar un shutdown de manera *graceful*.
-
 Por cada batch enviado, el servidor responde con un mensaje `{cantidad} apuestas almacenadas` indicando la cantidad de apuestas que fueron almacenadas correctamente. Esta respuesta permite al cliente verificar si todas las apuestas del batch fueron recibidas con éxito. En función de esta validación, el cliente imprime:
 
 + `action: apuesta_enviada | result: success`, si la cantidad almacenada coincide con la cantidad enviada.
