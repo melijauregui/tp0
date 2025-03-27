@@ -174,13 +174,14 @@ func (c *Client) SendBatchMessage(msg string) {
 		)
 	}
 
-	err_closing := c.conn.Close()
-	if err_closing != nil {
-		if c.Running {
-			log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+	if c.conn != nil {
+		err_closing := c.conn.Close()
+		if err_closing != nil {
+			if c.Running {
+				log.Errorf("action: connection closed | result: fail | client_id: %v | signal: %v | closed resource: %v", c.config.ID, err_closing)
+			}
 		}
+		log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
+		c.conn = nil
 	}
-	log.Infof("action: connection closed | result: success | client_id: %v ", c.config.ID)
-	c.conn = nil
-
 }
