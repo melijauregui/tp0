@@ -123,7 +123,7 @@ Esto requirió realizar una serie de cambios en la estructura Server para asegur
 
 ## Diagramas protocolo de comunicación
 
-![alt text](image.png)
-![alt text](image-1.png)
-![alt text](image-2.png)
-![alt text](image-3.png)
+![alt text](imagenes/image.png)
+![alt text](imagenes/image-1.png)
+![alt text](imagenes/image-2.png)
+![alt text](imagenes/image-3.png)
