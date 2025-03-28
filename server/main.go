@@ -93,8 +93,8 @@ func main() {
 		log.Fatalf("action: start server | result: success | Failed to start server: %v", err)
 	}
 	go HandleSignals(server)
-	wg.Wait()
 	server.Run()
+	wg.Wait()
 	time.Sleep(500 * time.Millisecond)
 }
 
