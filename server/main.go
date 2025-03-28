@@ -92,13 +92,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("action: start server | result: success | Failed to start server: %v", err)
 	}
-	go HandleSignals(server)
+	go HandleSignals(server, &wg)
 	server.Run()
 	wg.Wait()
 	time.Sleep(500 * time.Millisecond)
 }
 
-func HandleSignals(s *common.Server) {
+func HandleSignals(s *common.Server, wg *sync.WaitGroup) {
+
+	defer wg.Done()
 
 	sigChannel := make(chan os.Signal, 1) // espera las signals
 	//crea un canal (chan) en Go que puede recibir valores del tipo os.Signal
