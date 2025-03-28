@@ -250,9 +250,9 @@ func (s *Server) GracefulShutdown() {
 	if s.listener != nil {
 		err := s.listener.Close()
 		if err != nil {
-			log.Infof("action: listener.Close() finished | result: success")
+			log.Infof("action: listener.Close() finished | result: success| error: %v", err)
 		} else {
-			log.Infof("action: listener.Close() finished | result: fail | error: %v", err)
+			log.Infof("action: listener.Close() finished | result: success")
 		}
 	}
 	log.Infof("action: graceful_shutdown | result: success | msg: server closed gracefully")
