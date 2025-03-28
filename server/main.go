@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -85,13 +86,14 @@ func main() {
 		Port:             v.GetInt("default.server_port"),
 		NumberOfAgencies: v.GetInt("number_of_agencies"),
 	}
-
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	server, err := common.NewServer(serverConfig)
 	if err != nil {
 		log.Fatalf("action: start server | result: success | Failed to start server: %v", err)
 	}
 	go HandleSignals(server)
-
+	wg.Wait()
 	server.Run()
 	time.Sleep(500 * time.Millisecond)
 }
