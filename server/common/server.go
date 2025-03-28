@@ -50,10 +50,10 @@ func NewServer(config ServerConfig) (*Server, error) {
 }
 
 func (s *Server) Run() {
-	for s.isRunning() {
+	for s.IsRunning() {
 		conn, ip, err := s.acceptNewConnection()
 		if err != nil {
-			if !s.isRunning() {
+			if !s.IsRunning() {
 				log.Infof("action: accepted connection fail for quitting | result: success")
 				return
 			}
@@ -88,7 +88,7 @@ func (s *Server) handleClientConnection(clientConn net.Conn, ip string) {
 
 	msgStr, err_reading_msg := common.ReadMessage(clientConn)
 	if err_reading_msg != nil {
-		if s.isRunning() {
+		if s.IsRunning() {
 			log.Infof("action: receive_message | result: fail | error: %v", err_reading_msg)
 		}
 		return
@@ -113,7 +113,7 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 		}
 		newBet, err_creating_bet := NewBet(betInfo[0], betInfo[1], betInfo[2], betInfo[3], betInfo[4], betInfo[5])
 		if err_creating_bet != nil {
-			if s.isRunning() {
+			if s.IsRunning() {
 				log.Errorf("action: create_bet | result: fail | error: %v", err_creating_bet)
 				error_in_bets = true
 				continue
@@ -127,7 +127,7 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 	err_store_bets := StoreBets(betList)
 	s.betsLock.Unlock()
 	if err_store_bets != nil {
-		if s.isRunning() {
+		if s.IsRunning() {
 			log.Errorf("action: store_bets | result: fail | error: %v", err_store_bets)
 		}
 		return
@@ -142,7 +142,7 @@ func (s *Server) handleStoreBetsMessage(clientConn net.Conn, msgStr string) {
 	msgServer := fmt.Sprintf("%d apuestas almacenadas", len(betList))
 	err_sending_msg := common.SendMessage(clientConn, msgServer)
 	if err_sending_msg != nil {
-		if s.isRunning() {
+		if s.IsRunning() {
 			log.Errorf("action: sending server message | result: fail | error: %v", err_sending_msg)
 		}
 	} else {
@@ -166,6 +166,7 @@ func (s *Server) handleAgencyWaitingMessage(clientConn net.Conn, msgStr string) 
 			msg = msg[0 : len(msg)-1]
 		}
 		log.Infof("action: send winners agency | result: success | agency: %d", agency)
+		delete(s.agenciesWaiting, agency)
 	} else {
 		msg = "No winners yet"
 		s.agenciesWaiting[agency] = ""
@@ -175,11 +176,18 @@ func (s *Server) handleAgencyWaitingMessage(clientConn net.Conn, msgStr string) 
 
 	err_sending_msg := common.SendMessage(clientConn, msg)
 	if err_sending_msg != nil {
-		if s.isRunning() {
+		if s.IsRunning() {
 			log.Errorf("action: send client message | result: fail | error: %v | msg_server:", err_sending_msg, msg)
 		}
 	} else {
 		log.Infof("action: send client message | result: success | msg_server: %s", msg)
+	}
+
+	s.lockWinnerRevealed.Lock()
+	agenciesWaiting := len(s.agenciesWaiting)
+	s.lockWinnerRevealed.Unlock()
+	if agenciesWaiting == 0 && s.IsRunning() {
+		s.GracefulShutdown()
 	}
 
 }
@@ -192,14 +200,14 @@ func (s *Server) canRevealWinners() {
 		bets, err_loading_bets := LoadBets()
 		s.betsLock.Unlock()
 		if err_loading_bets != nil {
-			if s.isRunning() {
+			if s.IsRunning() {
 				log.Errorf("action: load_bets | result: fail | error: %v", err_loading_bets)
 			}
 			return
 		}
 
 		for _, bet := range bets {
-			if !s.isRunning() {
+			if !s.IsRunning() {
 				break
 			}
 			if HasWon(bet) {
@@ -250,7 +258,7 @@ func (s *Server) GracefulShutdown() {
 	log.Infof("action: graceful_shutdown | result: success | msg: server closed gracefully")
 }
 
-func (s *Server) isRunning() bool {
+func (s *Server) IsRunning() bool {
 	s.runningLock.Lock()
 	running := s.running
 	defer s.runningLock.Unlock()
