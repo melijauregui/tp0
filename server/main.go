@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -85,18 +86,27 @@ func main() {
 		Port:             v.GetInt("default.server_port"),
 		NumberOfAgencies: v.GetInt("number_of_agencies"),
 	}
-
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	finishChan := make(chan bool)
 	server, err := common.NewServer(serverConfig)
 	if err != nil {
 		log.Fatalf("action: start server | result: success | Failed to start server: %v", err)
 	}
-	go HandleSignals(server)
-
+	go HandleSignals(server, &wg, finishChan)
 	server.Run()
-	time.Sleep(500 * time.Millisecond)
+	if server.IsRunning() {
+		finishChan <- true
+	}
+	close(finishChan)
+	log.Infof("action: finish server | result: success ")
+	wg.Wait()
+	time.Sleep(1000 * time.Millisecond)
 }
 
-func HandleSignals(s *common.Server) {
+func HandleSignals(s *common.Server, wg *sync.WaitGroup, finishChan chan bool) {
+
+	defer wg.Done()
 
 	sigChannel := make(chan os.Signal, 1) // espera las signals
 	//crea un canal (chan) en Go que puede recibir valores del tipo os.Signal
@@ -104,7 +114,12 @@ func HandleSignals(s *common.Server) {
 	signal.Notify(sigChannel, syscall.SIGTERM)
 	//escuche la señal SIGTERM del sistema operativo.
 	//cuando SIGTERM ocurra, se enviará automáticamente al canal sigChannel
-	<-sigChannel
-	//Bloquea la ejecución hasta que el canal reciba una señal.
-	s.GracefulShutdown()
+	select {
+	case <-finishChan:
+		log.Infof("action: signal | result: success | signal: finish")
+	case <-sigChannel:
+		log.Infof("action: signal | result: success | signal: SIGTERM")
+		//Bloquea la ejecución hasta que el canal reciba una señal.
+		s.GracefulShutdown()
+	}
 }
